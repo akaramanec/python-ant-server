@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <link rel="icon" href="data:,">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANT+ Live Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #1a1a2e;
+            --card-bg: #16213e;
+            --text-color: #e94560;
+            --accent-color: #0f3460;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: var(--bg-color);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 { text-align: center; color: #fff; text-transform: uppercase; letter-spacing: 2px; }
+
+        .status-bar { text-align: center; margin-bottom: 20px; font-size: 0.9em; }
+        #status-indicator { font-weight: bold; }
+
+        #dashboard-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .device-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            border: 2px solid var(--accent-color);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        /* Фіксована висота для блоку імені (2 рядки по ~1.2em + margin) */
+        .user-name-block {
+            height: 3em;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+
+        .user-first-name, .user-last-name {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #fff;
+            line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .device-id { font-size: 0.75em; color: #888; margin-bottom: 10px; }
+
+        .hr-value {
+            font-size: 3.5em;
+            font-weight: bold;
+            margin: 5px 0;
+            color: var(--text-color);
+            line-height: 1;
+        }
+
+        .hr-high { color: var(--danger); }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            margin-top: 15px;
+            padding-top: 10px;
+            border-top: 1px solid var(--accent-color);
+            font-size: 0.9em;
+        }
+
+        .kcal-box { color: var(--warning); }
+        .time-box { color: var(--success); }
+
+        .ts-value { font-size: 0.7em; color: #555; margin-top: 10px; }
+
+        .footer { text-align: center; margin-top: 40px; color: #444; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+<h1>ANT+ Monitoring System</h1>
+
+<div class="status-bar">
+    Статус з'єднання: <span id="status-indicator">Connecting...</span>
+</div>
+
+<div id="dashboard-container">
+    {% for row in data %}
+    <div id="device-{{ row.device_id }}" class="device-card">
+        <div class="user-name-block">
+            <div class="user-first-name">{{ row.first_name }}</div>
+            <div class="user-last-name">{{ row.last_name }}</div>
+        </div>
+        <div class="device-id">Sensor ID: {{ row.device_id }}</div>
+        <div class="hr-value {{ 'hr-high' if row.hr > 150 else '' }}">{{ row.hr }}</div>
+        <div class="stats-grid">
+            <div class="kcal-box">🔥 {{ row.calories }} <small>kcal</small></div>
+            <div class="time-box">⏱️ {{ row.fitness_time }}</div>
+        </div>
+        <div class="ts-value">Last: {{ row.ts }}</div>
+    </div>
+    {% endfor %}
+</div>
+
+<div class="footer">
+    Останнє повне оновлення сторінки: {{ now }}
+</div>
+
+<script>
+    const socketUrl = `ws://${window.location.host}/ws`;
+    let socket;
+
+    function connectWebSocket() {
+        socket = new WebSocket(socketUrl);
+
+        socket.onopen = function () {
+            const indicator = document.getElementById('status-indicator');
+            indicator.innerText = "LIVE (WebSocket)";
+            indicator.style.color = "#4caf50";
+        };
+
+        socket.onmessage = function (event) {
+            try {
+                const data = JSON.parse(event.data);
+                updateHeartRateUI(data);
+            } catch (e) {
+                console.error("Помилка парсингу даних:", e);
+            }
+        };
+
+        socket.onclose = function () {
+            const indicator = document.getElementById('status-indicator');
+            indicator.innerText = "OFFLINE (Reconnect in 3s...)";
+            indicator.style.color = "#f44336";
+            setTimeout(connectWebSocket, 3000);
+        };
+
+        socket.onerror = function (err) {
+            socket.close();
+        };
+    }
+
+    function updateHeartRateUI(data) {
+        if (!data || !data.device_id) return;
+
+        let card = document.getElementById(`device-${data.device_id}`);
+
+        if (!card) {
+            const container = document.getElementById('dashboard-container');
+            card = document.createElement('div');
+            card.id = `device-${data.device_id}`;
+            card.className = 'device-card';
+            container.prepend(card);
+        }
+
+        card.innerHTML = `
+            <div class="user-name-block">
+                <div class="user-first-name">${data.first_name}</div>
+                <div class="user-last-name">${data.last_name}</div>
+            </div>
+            <div class="device-id">Sensor ID: ${data.device_id}</div>
+            <div class="hr-value ${data.hr > 150 ? 'hr-high' : ''}">${data.hr}</div>
+            <div class="stats-grid">
+                <div class="kcal-box">🔥 ${data.calories} <small>kcal</small></div>
+                <div class="time-box">⏱️ ${data.fitness_time}</div>
+            </div>
+            <div class="ts-value">Last update: ${data.ts}</div>
+        `;
+    }
+
+    document.addEventListener('DOMContentLoaded', connectWebSocket);
+</script>
+</body>
+</html>
