@@ -1,4 +1,5 @@
 import sqlite3
+from datetime import datetime
 from config import DB_FILE
 
 def init_db():
@@ -169,3 +170,40 @@ def add_tracker_if_missing(device_id, name: str = None):
             INSERT OR IGNORE INTO trackers (device_id, name, is_active)
             VALUES (?, ?, 1)
         """, (device_id, tracker_name))
+
+def get_users_for_rental():
+    with get_db_connection() as conn:
+        return conn.execute("""
+            SELECT id, first_name, last_name
+            FROM users
+            ORDER BY last_name, first_name
+        """).fetchall()
+
+def get_trackers_for_rental():
+    with get_db_connection() as conn:
+        return conn.execute("""
+            SELECT device_id, name
+            FROM trackers
+            WHERE is_active = 1
+            ORDER BY name
+        """).fetchall()
+
+def is_pair_rental_active(customer_id: int, device_id: int) -> bool:
+    with get_db_connection() as conn:
+        row = conn.execute("""
+            SELECT 1
+            FROM device_rentals
+            WHERE customer_id = ? AND device_id = ? AND finish_at IS NULL
+            LIMIT 1
+        """, (customer_id, device_id)).fetchone()
+        return row is not None
+
+def stop_pair_rental(customer_id: int, device_id: int) -> int:
+    with get_db_connection() as conn:
+        now_str = datetime.now().isoformat()
+        cursor = conn.execute("""
+            UPDATE device_rentals
+            SET finish_at = ?
+            WHERE customer_id = ? AND device_id = ? AND finish_at IS NULL
+        """, (now_str, customer_id, device_id))
+        return cursor.rowcount

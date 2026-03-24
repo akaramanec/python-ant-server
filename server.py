@@ -55,6 +55,52 @@ async def read_dashboard(request: Request):
         "tracking_timeout_sec": database.get_tracking_timeout_sec()
     })
 
+@app.get("/dashboard/users")
+async def dashboard_users():
+    rows = database.get_users_for_rental()
+    return [
+        {
+            "id": row["id"],
+            "first_name": row["first_name"],
+            "last_name": row["last_name"]
+        }
+        for row in rows
+    ]
+
+@app.get("/dashboard/trackers")
+async def dashboard_trackers():
+    rows = database.get_trackers_for_rental()
+    return [
+        {
+            "device_id": row["device_id"],
+            "name": row["name"]
+        }
+        for row in rows
+    ]
+
+@app.get("/dashboard/rentals/status")
+async def dashboard_rental_status(customer_id: int, device_id: int):
+    is_active = database.is_pair_rental_active(customer_id, device_id)
+    return {"active": is_active}
+
+@app.post("/dashboard/rentals/start")
+async def dashboard_start_rental(rental: models.RentalCreate):
+    now_str = datetime.now().isoformat()
+    with database.get_db_connection() as conn:
+        conn.execute("UPDATE device_rentals SET finish_at = ? WHERE device_id = ? AND finish_at IS NULL",
+                     (now_str, rental.device_id))
+        conn.execute("""
+            INSERT INTO device_rentals (customer_id, device_id, start_at, finish_at, calories)
+            VALUES (?, ?, ?, NULL, 0.0)
+        """, (rental.customer_id, rental.device_id, now_str))
+    calories_tracker[rental.device_id] = 0.0
+    return {"status": "started", "device_id": rental.device_id, "customer_id": rental.customer_id}
+
+@app.post("/dashboard/rentals/stop")
+async def dashboard_stop_rental(customer_id: int, device_id: int):
+    updated_rows = database.stop_pair_rental(customer_id, device_id)
+    return {"status": "finished", "updated_rows": updated_rows, "device_id": device_id, "customer_id": customer_id}
+
 @app.get("/settings/search-new-trackers")
 async def get_search_new_trackers(api_key: str = Depends(verify_api_key)):
     return {"enabled": database.is_search_new_trackers_enabled()}

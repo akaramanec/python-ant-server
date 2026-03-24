@@ -28,6 +28,17 @@
 
         .status-bar { text-align: center; margin-bottom: 20px; font-size: 0.9em; }
         #status-indicator { font-weight: bold; }
+        .toolbar { text-align: center; margin-bottom: 20px; }
+        .rent-btn {
+            background: var(--accent-color);
+            color: #fff;
+            border: 1px solid #345c8f;
+            border-radius: 8px;
+            padding: 10px 20px;
+            cursor: pointer;
+            font-size: 1em;
+        }
+        .rent-btn:hover { opacity: 0.9; }
 
         #dashboard-container {
             display: grid;
@@ -96,6 +107,52 @@
         .tracking-online { color: var(--success); }
         .tracking-offline { color: var(--danger); }
         .tracking-unbound { color: #9e9e9e; }
+        .btn-start { background: var(--success); border-color: #2e7d32; }
+        .btn-stop { background: var(--danger); border-color: #b71c1c; }
+
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.65);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal {
+            width: min(480px, 95vw);
+            background: var(--card-bg);
+            border: 1px solid var(--accent-color);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+        .modal h2 { margin-top: 0; text-align: center; }
+        .modal-row { margin-bottom: 12px; }
+        .modal label { display: block; margin-bottom: 6px; color: #cfcfcf; }
+        .modal select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid #355;
+            background: #0f1d35;
+            color: #fff;
+        }
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 18px;
+        }
+        .modal-close {
+            background: transparent;
+            color: #ddd;
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+        }
 
         .footer { text-align: center; margin-top: 40px; color: #444; font-size: 0.8em; }
     </style>
@@ -105,6 +162,9 @@
 
 <div class="status-bar">
     Статус з'єднання: <span id="status-indicator">Connecting...</span>
+</div>
+<div class="toolbar">
+    <button id="open-rent-modal-btn" class="rent-btn">Аренда</button>
 </div>
 
 <div id="dashboard-container">
@@ -129,11 +189,32 @@
     Останнє повне оновлення сторінки: {{ now }}
 </div>
 
+<div id="rent-modal-overlay" class="modal-overlay">
+    <div class="modal">
+        <h2>Керування орендою</h2>
+        <div class="modal-row">
+            <label for="rent-user-select">Користувач</label>
+            <select id="rent-user-select"></select>
+        </div>
+        <div class="modal-row">
+            <label for="rent-tracker-select">Трекер</label>
+            <select id="rent-tracker-select"></select>
+        </div>
+        <div id="rent-status-text" class="ts-value">Статус пари: ...</div>
+        <div class="modal-actions">
+            <button id="rent-modal-close-btn" class="modal-close">Закрити</button>
+            <button id="rent-action-btn" class="rent-btn btn-start">Почати аренду</button>
+        </div>
+    </div>
+</div>
+
 <script>
     const socketUrl = `ws://${window.location.host}/ws`;
     const trackingTimeoutSec = Number("{{ tracking_timeout_sec | default(3) }}") || 3;
     const trackingTimeoutMs = trackingTimeoutSec * 1000;
     let socket;
+    let rentPairIsActive = false;
+    let rentalDataLoaded = false;
 
     function connectWebSocket() {
         socket = new WebSocket(socketUrl);
@@ -247,8 +328,115 @@
         });
     }
 
+    async function fetchJson(url, options = {}) {
+        const response = await fetch(url, options);
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+        return response.json();
+    }
+
+    async function loadRentalOptions() {
+        const users = await fetchJson('/dashboard/users');
+        const trackers = await fetchJson('/dashboard/trackers');
+
+        const userSelect = document.getElementById('rent-user-select');
+        const trackerSelect = document.getElementById('rent-tracker-select');
+
+        userSelect.innerHTML = users
+            .map((u) => `<option value="${u.id}">${u.last_name} ${u.first_name} (ID: ${u.id})</option>`)
+            .join('');
+
+        trackerSelect.innerHTML = trackers
+            .map((t) => `<option value="${t.device_id}">${t.name} (ID: ${t.device_id})</option>`)
+            .join('');
+    }
+
+    function setRentActionButtonState(isActive) {
+        const btn = document.getElementById('rent-action-btn');
+        const status = document.getElementById('rent-status-text');
+        rentPairIsActive = isActive;
+        if (isActive) {
+            btn.textContent = 'Завершити аренду';
+            btn.classList.remove('btn-start');
+            btn.classList.add('btn-stop');
+            status.textContent = 'Статус пари: Оренда активна';
+        } else {
+            btn.textContent = 'Почати аренду';
+            btn.classList.remove('btn-stop');
+            btn.classList.add('btn-start');
+            status.textContent = 'Статус пари: Оренда неактивна';
+        }
+    }
+
+    async function refreshPairRentalStatus() {
+        const userSelect = document.getElementById('rent-user-select');
+        const trackerSelect = document.getElementById('rent-tracker-select');
+        const customerId = Number(userSelect.value);
+        const deviceId = Number(trackerSelect.value);
+        if (!customerId || !deviceId) {
+            setRentActionButtonState(false);
+            return;
+        }
+        const status = await fetchJson(`/dashboard/rentals/status?customer_id=${customerId}&device_id=${deviceId}`);
+        setRentActionButtonState(Boolean(status.active));
+    }
+
+    async function onRentActionClick() {
+        const userSelect = document.getElementById('rent-user-select');
+        const trackerSelect = document.getElementById('rent-tracker-select');
+        const customerId = Number(userSelect.value);
+        const deviceId = Number(trackerSelect.value);
+        if (!customerId || !deviceId) return;
+
+        if (rentPairIsActive) {
+            await fetchJson(`/dashboard/rentals/stop?customer_id=${customerId}&device_id=${deviceId}`, { method: 'POST' });
+        } else {
+            await fetchJson('/dashboard/rentals/start', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ customer_id: customerId, device_id: deviceId })
+            });
+        }
+        await refreshPairRentalStatus();
+    }
+
+    async function openRentModal() {
+        const overlay = document.getElementById('rent-modal-overlay');
+        overlay.classList.add('open');
+        if (!rentalDataLoaded) {
+            await loadRentalOptions();
+            rentalDataLoaded = true;
+        }
+        await refreshPairRentalStatus();
+    }
+
+    function closeRentModal() {
+        document.getElementById('rent-modal-overlay').classList.remove('open');
+    }
+
+    function initRentModalHandlers() {
+        document.getElementById('open-rent-modal-btn').addEventListener('click', () => {
+            openRentModal().catch((e) => console.error('Не вдалося відкрити модалку оренди', e));
+        });
+        document.getElementById('rent-modal-close-btn').addEventListener('click', closeRentModal);
+        document.getElementById('rent-action-btn').addEventListener('click', () => {
+            onRentActionClick().catch((e) => console.error('Помилка керування орендою', e));
+        });
+        document.getElementById('rent-user-select').addEventListener('change', () => {
+            refreshPairRentalStatus().catch((e) => console.error('Помилка читання статусу пари', e));
+        });
+        document.getElementById('rent-tracker-select').addEventListener('change', () => {
+            refreshPairRentalStatus().catch((e) => console.error('Помилка читання статусу пари', e));
+        });
+        document.getElementById('rent-modal-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'rent-modal-overlay') closeRentModal();
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         bootstrapInitialTrackingState();
+        initRentModalHandlers();
         connectWebSocket();
         setInterval(refreshAllTrackingStatuses, 1000);
     });
