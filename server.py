@@ -51,7 +51,8 @@ async def read_dashboard(request: Request):
     return templates.TemplateResponse("index.html", {
         "request": request,
         "data": rows,
-        "now": datetime.now().strftime("%H:%M:%S")
+        "now": datetime.now().strftime("%H:%M:%S"),
+        "tracking_timeout_sec": database.get_tracking_timeout_sec()
     })
 
 @app.get("/settings/search-new-trackers")

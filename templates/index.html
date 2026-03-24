@@ -93,6 +93,9 @@
         .time-box { color: var(--success); }
 
         .ts-value { font-size: 0.7em; color: #555; margin-top: 10px; }
+        .tracking-online { color: var(--success); }
+        .tracking-offline { color: var(--danger); }
+        .tracking-unbound { color: #9e9e9e; }
 
         .footer { text-align: center; margin-top: 40px; color: #444; font-size: 0.8em; }
     </style>
@@ -106,7 +109,7 @@
 
 <div id="dashboard-container">
     {% for row in data %}
-    <div id="device-{{ row.device_id }}" class="device-card">
+    <div id="device-{{ row.device_id }}" class="device-card" data-last-ts="{{ row.ts if row.ts else '' }}">
         <div class="user-name-block">
             <div class="user-first-name">{{ row.first_name }}</div>
             <div class="user-last-name">{{ row.last_name }}</div>
@@ -117,7 +120,7 @@
             <div class="kcal-box">🔥 {{ row.calories }} <small>kcal</small></div>
             <div class="time-box">⏱️ {{ row.fitness_time }}</div>
         </div>
-        <div class="ts-value">Last: {{ row.ts }}</div>
+        <div class="ts-value tracking-status">Статус: Незв'язаний</div>
     </div>
     {% endfor %}
 </div>
@@ -128,6 +131,7 @@
 
 <script>
     const socketUrl = `ws://${window.location.host}/ws`;
+    const trackingTimeoutMs = {{ tracking_timeout_sec | default(3) }} * 1000;
     let socket;
 
     function connectWebSocket() {
@@ -184,11 +188,69 @@
                 <div class="kcal-box">🔥 ${data.calories} <small>kcal</small></div>
                 <div class="time-box">⏱️ ${data.fitness_time}</div>
             </div>
-            <div class="ts-value">Last update: ${data.ts}</div>
+            <div class="ts-value tracking-status">Статус: На зв'язку</div>
         `;
+        card.dataset.lastUpdateMs = String(Date.now());
+        updateTrackingStatus(card);
     }
 
-    document.addEventListener('DOMContentLoaded', connectWebSocket);
+    function parseTimestampToMs(tsValue) {
+        if (!tsValue) return null;
+        const parsed = Date.parse(tsValue);
+        if (!Number.isNaN(parsed)) return parsed;
+        const numeric = Number(tsValue);
+        if (Number.isFinite(numeric) && numeric > 0) {
+            // Якщо приходить unix-час у секундах, переведемо у мс.
+            return numeric < 1e12 ? numeric * 1000 : numeric;
+        }
+        return null;
+    }
+
+    function updateTrackingStatus(card) {
+        const statusNode = card.querySelector('.tracking-status');
+        if (!statusNode) return;
+
+        const lastUpdateMsRaw = card.dataset.lastUpdateMs;
+        const lastUpdateMs = lastUpdateMsRaw ? Number(lastUpdateMsRaw) : null;
+
+        statusNode.classList.remove('tracking-online', 'tracking-offline', 'tracking-unbound');
+
+        if (!lastUpdateMs || !Number.isFinite(lastUpdateMs)) {
+            statusNode.textContent = "Статус: Незв'язаний";
+            statusNode.classList.add('tracking-unbound');
+            return;
+        }
+
+        const diff = Date.now() - lastUpdateMs;
+        if (diff > trackingTimeoutMs) {
+            statusNode.textContent = "Статус: Відсутній сигнал";
+            statusNode.classList.add('tracking-offline');
+        } else {
+            statusNode.textContent = "Статус: На зв'язку";
+            statusNode.classList.add('tracking-online');
+        }
+    }
+
+    function refreshAllTrackingStatuses() {
+        document.querySelectorAll('.device-card').forEach(updateTrackingStatus);
+    }
+
+    function bootstrapInitialTrackingState() {
+        document.querySelectorAll('.device-card').forEach((card) => {
+            const lastTs = card.dataset.lastTs;
+            const parsed = parseTimestampToMs(lastTs);
+            if (parsed) {
+                card.dataset.lastUpdateMs = String(parsed);
+            }
+            updateTrackingStatus(card);
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        bootstrapInitialTrackingState();
+        connectWebSocket();
+        setInterval(refreshAllTrackingStatuses, 1000);
+    });
 </script>
 </body>
 </html>

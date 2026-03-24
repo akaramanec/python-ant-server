@@ -32,6 +32,10 @@ def init_db():
             INSERT OR IGNORE INTO settings (key, name, value)
             VALUES ('search_new_trackers', 'Пошук нових трекерів', '0')
         """)
+        conn.execute("""
+            INSERT OR IGNORE INTO settings (key, name, value)
+            VALUES ('tracking_timeout_sec', 'Таймаут відсутності сигналу (сек)', '3')
+        """)
         # Оренда (виправив відступ тут)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS device_rentals (
@@ -134,6 +138,19 @@ def set_search_new_trackers_enabled(enabled: bool):
             VALUES ('search_new_trackers', 'Пошук нових трекерів', ?)
             ON CONFLICT(key) DO UPDATE SET value = excluded.value
         """, ("1" if enabled else "0",))
+
+def get_tracking_timeout_sec(default_value: int = 3) -> int:
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT value FROM settings WHERE key = 'tracking_timeout_sec'"
+        ).fetchone()
+        if not row:
+            return default_value
+        try:
+            value = int(row["value"])
+            return value if value > 0 else default_value
+        except (TypeError, ValueError):
+            return default_value
 
 def tracker_exists(device_id) -> bool:
     device_id = int(device_id)
