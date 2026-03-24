@@ -22,3 +22,6 @@ class UserUpdate(BaseModel):
 class RentalCreate(BaseModel):
     customer_id: int
     device_id: int
+
+class SearchNewTrackersUpdate(BaseModel):
+    enabled: bool

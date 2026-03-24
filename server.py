@@ -54,11 +54,26 @@ async def read_dashboard(request: Request):
         "now": datetime.now().strftime("%H:%M:%S")
     })
 
+@app.get("/settings/search-new-trackers")
+async def get_search_new_trackers(api_key: str = Depends(verify_api_key)):
+    return {"enabled": database.is_search_new_trackers_enabled()}
+
+@app.put("/settings/search-new-trackers")
+async def set_search_new_trackers(
+    payload: models.SearchNewTrackersUpdate,
+    api_key: str = Depends(verify_api_key)
+):
+    database.set_search_new_trackers_enabled(payload.enabled)
+    return {"status": "ok", "enabled": payload.enabled}
+
 @app.post("/log")
 async def log_heart_rate(request: Request, api_key: str = Depends(verify_api_key)):
     try:
         data = await request.json()
         d_id, hr, ts = data['d_id'], data['hr'], data['ts']
+
+        if database.is_search_new_trackers_enabled():
+            database.add_tracker_if_missing(d_id)
 
         with database.get_db_connection() as conn:
             conn.execute("INSERT OR IGNORE INTO heart_rates (device_id, timestamp, hr) VALUES (?, ?, ?)", (d_id, ts, hr))

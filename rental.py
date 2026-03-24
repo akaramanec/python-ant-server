@@ -32,6 +32,31 @@ PORT = int(os.getenv("SERVER_PORT", 8000))
 API_URL = f"http://{HOST}:{PORT}"
 HEADERS = {"X-API-Key": API_KEY}
 
+def get_search_new_trackers_enabled():
+    try:
+        r = requests.get(f"{API_URL}/settings/search-new-trackers", headers=HEADERS)
+        data = r.json()
+        return bool(data.get("enabled", False))
+    except Exception:
+        return False
+
+def toggle_search_new_trackers():
+    current = get_search_new_trackers_enabled()
+    current_label = "УВІМКНЕНО" if current else "ВИМКНЕНО"
+    print(f"\n--- Пошук нових трекерів: {current_label} ---")
+
+    target = not current
+    answer = safe_input(
+        f"Змінити на {'УВІМКНЕНО' if target else 'ВИМКНЕНО'}? (y/n): "
+    ).strip().lower()
+    if answer != "y":
+        print("Скасовано.")
+        return
+
+    payload = {"enabled": target}
+    r = requests.put(f"{API_URL}/settings/search-new-trackers", json=payload, headers=HEADERS)
+    print("Результат:", r.json())
+
 def register_user():
     print("\n--- Реєстрація нового користувача ---")
     try:
@@ -115,12 +140,16 @@ def stop_rental():
 
 def main():
     while True:
+        current_search_state = get_search_new_trackers_enabled()
+        state_label = "УВІМКНЕНО" if current_search_state else "ВИМКНЕНО"
+
         print("\n--- СИСТЕМА КЕРУВАННЯ ANT+ ---")
         print("1. Реєстрація нового користувача")
         print("2. Почати оренду (старт тренування)")
         print("3. Завершити оренду (стоп)")
         print("4. Редагувати дані користувача (вага/вік)")
         print("5. Видалити користувача та всю історію")
+        print(f"6. Вкл/Викл пошук нових трекерів ({state_label})")
         print("0. Вихід")
 
         choice = safe_input("\nОберіть дію: ")
@@ -135,6 +164,8 @@ def main():
             edit_user_ui()
         elif choice == '5':
             delete_user_ui()
+        elif choice == '6':
+            toggle_search_new_trackers()
         elif choice == '0':
             print("Вихід...")
             break

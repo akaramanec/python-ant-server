@@ -3,6 +3,14 @@ from config import DB_FILE
 
 def init_db():
     with sqlite3.connect(DB_FILE) as conn:
+        # Налаштування
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS settings (
+            key VARCHAR(50) PRIMARY KEY,
+            name VARCHAR(250) NOT NULL,
+            value VARCHAR(50)
+            );
+        """)
         # Користувачі
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
@@ -11,6 +19,18 @@ def init_db():
                 age INTEGER, height INTEGER, weight INTEGER,
                 sex TEXT DEFAULT 'male'
             )
+        """)
+        # Трекери
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS trackers (
+            device_id INTEGER PRIMARY KEY,
+            name VARCHAR(250) NOT NULL,
+            is_active BOOLEAN DEFAULT 1
+            );
+        """)
+        conn.execute("""
+            INSERT OR IGNORE INTO settings (key, name, value)
+            VALUES ('search_new_trackers', 'Пошук нових трекерів', '0')
         """)
         # Оренда (виправив відступ тут)
         conn.execute("""
@@ -97,3 +117,38 @@ def update_rental_calories(device_id, calories):
             SET calories = ?
             WHERE device_id = ? AND finish_at IS NULL
         """, (calories, device_id))
+
+def is_search_new_trackers_enabled() -> bool:
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT value FROM settings WHERE key = 'search_new_trackers'"
+        ).fetchone()
+        if not row:
+            return False
+        return str(row["value"]) == "1"
+
+def set_search_new_trackers_enabled(enabled: bool):
+    with get_db_connection() as conn:
+        conn.execute("""
+            INSERT INTO settings (key, name, value)
+            VALUES ('search_new_trackers', 'Пошук нових трекерів', ?)
+            ON CONFLICT(key) DO UPDATE SET value = excluded.value
+        """, ("1" if enabled else "0",))
+
+def tracker_exists(device_id) -> bool:
+    device_id = int(device_id)
+    with get_db_connection() as conn:
+        row = conn.execute(
+            "SELECT 1 FROM trackers WHERE device_id = ? LIMIT 1",
+            (device_id,)
+        ).fetchone()
+        return row is not None
+
+def add_tracker_if_missing(device_id, name: str = None):
+    device_id = int(device_id)
+    tracker_name = name if name is not None else str(device_id)
+    with get_db_connection() as conn:
+        conn.execute("""
+            INSERT OR IGNORE INTO trackers (device_id, name, is_active)
+            VALUES (?, ?, 1)
+        """, (device_id, tracker_name))
