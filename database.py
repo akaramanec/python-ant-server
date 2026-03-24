@@ -207,3 +207,41 @@ def stop_pair_rental(customer_id: int, device_id: int) -> int:
             WHERE customer_id = ? AND device_id = ? AND finish_at IS NULL
         """, (now_str, customer_id, device_id))
         return cursor.rowcount
+
+def start_or_resume_rental(customer_id: int, device_id: int):
+    now_str = datetime.now().isoformat()
+    today_str = datetime.now().date().isoformat()
+
+    with get_db_connection() as conn:
+        # На одному трекері має бути лише одна активна оренда.
+        conn.execute("""
+            UPDATE device_rentals
+            SET finish_at = ?
+            WHERE device_id = ? AND finish_at IS NULL
+        """, (now_str, device_id))
+
+        today_rental = conn.execute("""
+            SELECT id, finish_at, calories
+            FROM device_rentals
+            WHERE customer_id = ? AND device_id = ? AND date(start_at) = ?
+            ORDER BY start_at DESC
+            LIMIT 1
+        """, (customer_id, device_id, today_str)).fetchone()
+
+        if today_rental:
+            if today_rental["finish_at"] is not None:
+                conn.execute("""
+                    UPDATE device_rentals
+                    SET finish_at = NULL
+                    WHERE id = ?
+                """, (today_rental["id"],))
+            return {
+                "action": "resumed",
+                "calories": float(today_rental["calories"] or 0.0)
+            }
+
+        conn.execute("""
+            INSERT INTO device_rentals (customer_id, device_id, start_at, finish_at, calories)
+            VALUES (?, ?, ?, NULL, 0.0)
+        """, (customer_id, device_id, now_str))
+        return {"action": "created", "calories": 0.0}

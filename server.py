@@ -85,16 +85,14 @@ async def dashboard_rental_status(customer_id: int, device_id: int):
 
 @app.post("/dashboard/rentals/start")
 async def dashboard_start_rental(rental: models.RentalCreate):
-    now_str = datetime.now().isoformat()
-    with database.get_db_connection() as conn:
-        conn.execute("UPDATE device_rentals SET finish_at = ? WHERE device_id = ? AND finish_at IS NULL",
-                     (now_str, rental.device_id))
-        conn.execute("""
-            INSERT INTO device_rentals (customer_id, device_id, start_at, finish_at, calories)
-            VALUES (?, ?, ?, NULL, 0.0)
-        """, (rental.customer_id, rental.device_id, now_str))
-    calories_tracker[rental.device_id] = 0.0
-    return {"status": "started", "device_id": rental.device_id, "customer_id": rental.customer_id}
+    result = database.start_or_resume_rental(rental.customer_id, rental.device_id)
+    calories_tracker[rental.device_id] = float(result["calories"] or 0.0)
+    return {
+        "status": "started",
+        "action": result["action"],
+        "device_id": rental.device_id,
+        "customer_id": rental.customer_id
+    }
 
 @app.post("/dashboard/rentals/stop")
 async def dashboard_stop_rental(customer_id: int, device_id: int):
@@ -207,17 +205,9 @@ async def delete_user(user_id: int, api_key: str = Depends(verify_api_key)):
 @app.post("/rentals/start")
 async def start_rental(rental: models.RentalCreate, api_key: str = Depends(verify_api_key)):
     try:
-        now_str = datetime.now().isoformat()
-        with database.get_db_connection() as conn:
-            conn.execute("UPDATE device_rentals SET finish_at = ? WHERE device_id = ? AND finish_at IS NULL",
-                         (now_str, rental.device_id))
-            conn.execute("""
-                INSERT INTO device_rentals (customer_id, device_id, start_at, finish_at, calories)
-                VALUES (?, ?, ?, NULL, 0.0)
-            """, (rental.customer_id, rental.device_id, now_str))
-
-        calories_tracker[rental.device_id] = 0.0
-        return {"status": "started", "device_id": rental.device_id}
+        result = database.start_or_resume_rental(rental.customer_id, rental.device_id)
+        calories_tracker[rental.device_id] = float(result["calories"] or 0.0)
+        return {"status": "started", "action": result["action"], "device_id": rental.device_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
