@@ -131,7 +131,8 @@
 
 <script>
     const socketUrl = `ws://${window.location.host}/ws`;
-    const trackingTimeoutMs = {{ tracking_timeout_sec | default(3) }} * 1000;
+    const trackingTimeoutSec = Number("{{ tracking_timeout_sec | default(3) }}") || 3;
+    const trackingTimeoutMs = trackingTimeoutSec * 1000;
     let socket;
 
     function connectWebSocket() {
