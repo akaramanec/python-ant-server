@@ -83,6 +83,16 @@ async def dashboard_rental_status(customer_id: int, device_id: int):
     is_active = database.is_pair_rental_active(customer_id, device_id)
     return {"active": is_active}
 
+@app.get("/dashboard/settings/search-new-trackers")
+async def dashboard_get_search_new_trackers():
+    return {"enabled": database.is_search_new_trackers_enabled()}
+
+@app.post("/dashboard/settings/search-new-trackers/toggle")
+async def dashboard_toggle_search_new_trackers():
+    new_value = not database.is_search_new_trackers_enabled()
+    database.set_search_new_trackers_enabled(new_value)
+    return {"status": "ok", "enabled": new_value}
+
 @app.post("/dashboard/rentals/start")
 async def dashboard_start_rental(rental: models.RentalCreate):
     result = database.start_or_resume_rental(rental.customer_id, rental.device_id)

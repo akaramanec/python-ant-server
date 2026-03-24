@@ -29,6 +29,7 @@
         .status-bar { text-align: center; margin-bottom: 20px; font-size: 0.9em; }
         #status-indicator { font-weight: bold; }
         .toolbar { text-align: center; margin-bottom: 20px; }
+        .toolbar .rent-btn + .rent-btn { margin-left: 10px; }
         .rent-btn {
             background: var(--accent-color);
             color: #fff;
@@ -165,6 +166,7 @@
 </div>
 <div class="toolbar">
     <button id="open-rent-modal-btn" class="rent-btn">Аренда</button>
+    <button id="toggle-search-trackers-btn" class="rent-btn">Пошук трекерів: ...</button>
 </div>
 
 <div id="dashboard-container">
@@ -348,6 +350,25 @@
         return response.json();
     }
 
+    async function refreshSearchTrackersButtonState() {
+        const btn = document.getElementById('toggle-search-trackers-btn');
+        const data = await fetchJson('/dashboard/settings/search-new-trackers');
+        if (data.enabled) {
+            btn.textContent = 'Пошук трекерів: УВІМК';
+            btn.classList.remove('btn-stop');
+            btn.classList.add('btn-start');
+        } else {
+            btn.textContent = 'Пошук трекерів: ВИМК';
+            btn.classList.remove('btn-start');
+            btn.classList.add('btn-stop');
+        }
+    }
+
+    async function toggleSearchTrackersMode() {
+        await fetchJson('/dashboard/settings/search-new-trackers/toggle', { method: 'POST' });
+        await refreshSearchTrackersButtonState();
+    }
+
     async function loadRentalOptions() {
         const users = await fetchJson('/dashboard/users');
         const trackers = await fetchJson('/dashboard/trackers');
@@ -444,11 +465,15 @@
         document.getElementById('rent-modal-overlay').addEventListener('click', (e) => {
             if (e.target.id === 'rent-modal-overlay') closeRentModal();
         });
+        document.getElementById('toggle-search-trackers-btn').addEventListener('click', () => {
+            toggleSearchTrackersMode().catch((e) => console.error('Помилка перемикання пошуку трекерів', e));
+        });
     }
 
     document.addEventListener('DOMContentLoaded', () => {
         bootstrapInitialTrackingState();
         initRentModalHandlers();
+        refreshSearchTrackersButtonState().catch((e) => console.error('Не вдалося отримати стан пошуку трекерів', e));
         connectWebSocket();
         setInterval(refreshAllTrackingStatuses, 1000);
     });
