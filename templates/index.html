@@ -228,6 +228,10 @@
         socket.onmessage = function (event) {
             try {
                 const data = JSON.parse(event.data);
+                if (data.event === 'rental_stopped') {
+                    removeDeviceCard(data.device_id);
+                    return;
+                }
                 updateHeartRateUI(data);
             } catch (e) {
                 console.error("Помилка парсингу даних:", e);
@@ -274,6 +278,14 @@
         `;
         card.dataset.lastUpdateMs = String(Date.now());
         updateTrackingStatus(card);
+    }
+
+    function removeDeviceCard(deviceId) {
+        if (!deviceId && deviceId !== 0) return;
+        const card = document.getElementById(`device-${deviceId}`);
+        if (card) {
+            card.remove();
+        }
     }
 
     function parseTimestampToMs(tsValue) {

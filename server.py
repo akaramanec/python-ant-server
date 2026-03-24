@@ -99,6 +99,12 @@ async def dashboard_start_rental(rental: models.RentalCreate):
 @app.post("/dashboard/rentals/stop")
 async def dashboard_stop_rental(customer_id: int, device_id: int):
     updated_rows = database.stop_pair_rental(customer_id, device_id)
+    if updated_rows > 0:
+        await web_socket.broadcast({
+            "event": "rental_stopped",
+            "device_id": device_id,
+            "customer_id": customer_id
+        })
     return {"status": "finished", "updated_rows": updated_rows, "device_id": device_id, "customer_id": customer_id}
 
 @app.get("/settings/search-new-trackers")
@@ -220,8 +226,13 @@ async def stop_rental(device_id: int, api_key: str = Depends(verify_api_key)):
     try:
         now_str = datetime.now().isoformat()
         with database.get_db_connection() as conn:
-            conn.execute("UPDATE device_rentals SET finish_at = ? WHERE device_id = ? AND finish_at IS NULL",
-                         (now_str, device_id))
+            cursor = conn.execute("UPDATE device_rentals SET finish_at = ? WHERE device_id = ? AND finish_at IS NULL",
+                                  (now_str, device_id))
+        if cursor.rowcount > 0:
+            await web_socket.broadcast({
+                "event": "rental_stopped",
+                "device_id": device_id
+            })
         return {"status": "finished", "device_id": device_id}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
