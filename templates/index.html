@@ -145,6 +145,14 @@
             gap: 10px;
             margin-top: 18px;
         }
+        .modal-actions.modal-actions-space {
+            justify-content: space-between;
+            width: 100%;
+        }
+        .right-actions {
+            display: flex;
+            gap: 10px;
+        }
         .modal-close {
             background: transparent;
             color: #ddd;
@@ -186,6 +194,14 @@
             background: var(--accent-color);
             color: #fff;
             cursor: pointer;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+        }
+
+        .modal-toggle-search-btn {
+            border-radius: 999px;
+            padding: 8px 12px;
+            font-size: 0.85em;
+            width: auto;
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
         }
 
@@ -255,10 +271,12 @@
             <label for="tracker-name-input">Нова назва</label>
             <input id="tracker-name-input" type="text" style="width:100%; padding:10px; border-radius:8px; border:1px solid #355; background:#0f1d35; color:#fff;" />
         </div>
-        <button id="toggle-search-trackers-btn" class="rent-btn btn-start" type="button" style="width:100%;">Пошук трекерів: ...</button>
-        <div class="modal-actions">
-            <button id="tracker-name-modal-close-btn" class="modal-close">Закрити</button>
-            <button id="tracker-name-save-btn" class="rent-btn btn-start" type="button">Зберегти</button>
+        <div class="modal-actions modal-actions-space">
+            <button id="toggle-search-trackers-btn" class="rent-btn btn-start modal-toggle-search-btn" type="button">Пошук трекерів: ...</button>
+            <div class="right-actions">
+                <button id="tracker-name-modal-close-btn" class="modal-close">Закрити</button>
+                <button id="tracker-name-save-btn" class="rent-btn btn-start" type="button">Зберегти</button>
+            </div>
         </div>
     </div>
 </div>
