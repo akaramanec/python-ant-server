@@ -171,6 +171,22 @@ def add_tracker_if_missing(device_id, name: str = None):
             VALUES (?, ?, 1)
         """, (device_id, tracker_name))
 
+def update_tracker_name(device_id: int, name: str) -> bool:
+    device_id = int(device_id)
+    if name is None:
+        return False
+    new_name = str(name).strip()
+    if not new_name:
+        return False
+
+    with get_db_connection() as conn:
+        cursor = conn.execute("""
+            UPDATE trackers
+            SET name = ?
+            WHERE device_id = ?
+        """, (new_name, device_id))
+        return cursor.rowcount > 0
+
 def get_users_for_rental():
     with get_db_connection() as conn:
         return conn.execute("""

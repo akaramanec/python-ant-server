@@ -25,3 +25,6 @@ class RentalCreate(BaseModel):
 
 class SearchNewTrackersUpdate(BaseModel):
     enabled: bool
+
+class TrackerNameUpdate(BaseModel):
+    name: str

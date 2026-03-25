@@ -153,6 +153,16 @@
             padding: 10px 14px;
             cursor: pointer;
         }
+        .modal-secondary-btn {
+            background: transparent;
+            color: #fff;
+            border: 1px solid #555;
+            border-radius: 8px;
+            padding: 10px 14px;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 10px;
+        }
         .floating-toggle-btn {
             position: fixed;
             right: 16px;
@@ -161,6 +171,21 @@
             font-size: 0.85em;
             border-radius: 999px;
             z-index: 1100;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+        }
+
+        .floating-edit-tracker-btn {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 1100;
+            padding: 8px 12px;
+            font-size: 0.85em;
+            border-radius: 999px;
+            border: 1px solid #345c8f;
+            background: var(--accent-color);
+            color: #fff;
+            cursor: pointer;
             box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
         }
 
@@ -174,9 +199,9 @@
     Статус з'єднання: <span id="status-indicator">Connecting...</span>
 </div>
 <div class="toolbar">
-    <button id="open-rent-modal-btn" class="rent-btn">Аренда</button>
+    <button id="open-rent-modal-btn" class="rent-btn">Оренда</button>
 </div>
-<button id="toggle-search-trackers-btn" class="rent-btn floating-toggle-btn">Пошук: ...</button>
+<button id="open-edit-tracker-name-modal-btn" class="floating-edit-tracker-btn">Трекери</button>
 
 <div id="dashboard-container">
     {% for row in data %}
@@ -214,7 +239,26 @@
         <div id="rent-status-text" class="ts-value">Статус пари: ...</div>
         <div class="modal-actions">
             <button id="rent-modal-close-btn" class="modal-close">Закрити</button>
-            <button id="rent-action-btn" class="rent-btn btn-start">Почати аренду</button>
+            <button id="rent-action-btn" class="rent-btn btn-start">Почати оренду</button>
+        </div>
+    </div>
+</div>
+
+<div id="tracker-name-modal-overlay" class="modal-overlay">
+    <div class="modal">
+        <h2>Редагування назви трекера</h2>
+        <div class="modal-row">
+            <label for="tracker-name-select">Трекер</label>
+            <select id="tracker-name-select"></select>
+        </div>
+        <div class="modal-row">
+            <label for="tracker-name-input">Нова назва</label>
+            <input id="tracker-name-input" type="text" style="width:100%; padding:10px; border-radius:8px; border:1px solid #355; background:#0f1d35; color:#fff;" />
+        </div>
+        <button id="toggle-search-trackers-btn" class="rent-btn btn-start" type="button" style="width:100%;">Пошук трекерів: ...</button>
+        <div class="modal-actions">
+            <button id="tracker-name-modal-close-btn" class="modal-close">Закрити</button>
+            <button id="tracker-name-save-btn" class="rent-btn btn-start" type="button">Зберегти</button>
         </div>
     </div>
 </div>
@@ -226,6 +270,7 @@
     let socket;
     let rentPairIsActive = false;
     let rentalDataLoaded = false;
+    let trackersForNameModalCache = [];
 
     function connectWebSocket() {
         socket = new WebSocket(socketUrl);
@@ -399,12 +444,12 @@
         const status = document.getElementById('rent-status-text');
         rentPairIsActive = isActive;
         if (isActive) {
-            btn.textContent = 'Завершити аренду';
+            btn.textContent = 'Завершити оренду';
             btn.classList.remove('btn-start');
             btn.classList.add('btn-stop');
             status.textContent = 'Статус пари: Оренда активна';
         } else {
-            btn.textContent = 'Почати аренду';
+            btn.textContent = 'Почати оренду';
             btn.classList.remove('btn-stop');
             btn.classList.add('btn-start');
             status.textContent = 'Статус пари: Оренда неактивна';
@@ -422,6 +467,65 @@
         }
         const status = await fetchJson(`/dashboard/rentals/status?customer_id=${customerId}&device_id=${deviceId}`);
         setRentActionButtonState(Boolean(status.active));
+    }
+
+    async function loadTrackersForNameModal() {
+        const trackers = await fetchJson('/dashboard/trackers');
+        trackersForNameModalCache = trackers;
+        const trackerSelect = document.getElementById('tracker-name-select');
+        trackerSelect.innerHTML = trackers
+            .map((t) => `<option value="${t.device_id}">${t.name} (ID: ${t.device_id})</option>`)
+            .join('');
+
+        // Якщо є хоча б один трекер — встановимо назву в інпут.
+        if (trackers.length > 0) {
+            const first = trackers[0];
+            trackerSelect.value = String(first.device_id);
+            syncTrackerNameInputFromSelect();
+        }
+    }
+
+    function syncTrackerNameInputFromSelect() {
+        const trackerSelect = document.getElementById('tracker-name-select');
+        const deviceId = Number(trackerSelect.value);
+        const current = trackersForNameModalCache.find((t) => Number(t.device_id) === deviceId);
+        const input = document.getElementById('tracker-name-input');
+        input.value = current && current.name ? current.name : '';
+    }
+
+    function closeTrackerNameModal() {
+        document.getElementById('tracker-name-modal-overlay').classList.remove('open');
+    }
+
+    async function openTrackerNameModal() {
+        const overlay = document.getElementById('tracker-name-modal-overlay');
+        overlay.classList.add('open');
+        await refreshSearchTrackersButtonState();
+        await loadTrackersForNameModal();
+    }
+
+    async function saveTrackerNameFromModal() {
+        const trackerSelect = document.getElementById('tracker-name-select');
+        const deviceId = Number(trackerSelect.value);
+        const newNameRaw = document.getElementById('tracker-name-input').value;
+        const trimmed = String(newNameRaw || '').trim();
+
+        if (!deviceId) return;
+        if (!trimmed) {
+            alert('Назва не може бути порожньою.');
+            return;
+        }
+
+        await fetchJson(`/dashboard/trackers/${deviceId}/name`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name: trimmed })
+        });
+
+        // Оновимо списки в UI (орендні селектори теж залежать від trackers).
+        await loadRentalOptions();
+        await loadTrackersForNameModal();
+        closeTrackerNameModal();
     }
 
     async function onRentActionClick() {
@@ -476,6 +580,17 @@
         });
         document.getElementById('toggle-search-trackers-btn').addEventListener('click', () => {
             toggleSearchTrackersMode().catch((e) => console.error('Помилка перемикання пошуку трекерів', e));
+        });
+
+        document.getElementById('open-edit-tracker-name-modal-btn').addEventListener('click', () => {
+            openTrackerNameModal().catch((e) => console.error('Не вдалося відкрити модалку редагування трекера', e));
+        });
+        document.getElementById('tracker-name-modal-close-btn').addEventListener('click', closeTrackerNameModal);
+        document.getElementById('tracker-name-save-btn').addEventListener('click', () => {
+            saveTrackerNameFromModal().catch((e) => console.error('Помилка збереження назви трекера', e));
+        });
+        document.getElementById('tracker-name-select').addEventListener('change', () => {
+            syncTrackerNameInputFromSelect();
         });
     }
 

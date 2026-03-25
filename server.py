@@ -83,6 +83,13 @@ async def dashboard_rental_status(customer_id: int, device_id: int):
     is_active = database.is_pair_rental_active(customer_id, device_id)
     return {"active": is_active}
 
+@app.put("/dashboard/trackers/{device_id}/name")
+async def dashboard_update_tracker_name(device_id: int, payload: models.TrackerNameUpdate):
+    success = database.update_tracker_name(device_id, payload.name)
+    if not success:
+        raise HTTPException(status_code=404, detail="Tracker not found or invalid name")
+    return {"status": "ok", "device_id": device_id, "name": payload.name}
+
 @app.get("/dashboard/settings/search-new-trackers")
 async def dashboard_get_search_new_trackers():
     return {"enabled": database.is_search_new_trackers_enabled()}
