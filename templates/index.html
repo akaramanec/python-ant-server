@@ -448,22 +448,34 @@
         const lastUpdateMsRaw = card.dataset.lastUpdateMs;
         const lastUpdateMs = lastUpdateMsRaw ? Number(lastUpdateMsRaw) : null;
 
+        const prevState = card.dataset.trackingState || '';
+        let desiredState = 'unbound';
+
         statusNode.classList.remove('tracking-online', 'tracking-offline', 'tracking-unbound');
 
         if (!lastUpdateMs || !Number.isFinite(lastUpdateMs)) {
-            statusNode.textContent = "Статус: Незв'язаний";
-            statusNode.classList.add('tracking-unbound');
+            desiredState = 'unbound';
+        } else {
+            const diff = Date.now() - lastUpdateMs;
+            desiredState = diff > trackingTimeoutMs ? 'offline' : 'online';
+        }
+
+        if (prevState === desiredState) {
             return;
         }
 
-        const diff = Date.now() - lastUpdateMs;
-        if (diff > trackingTimeoutMs) {
+        if (desiredState === 'unbound') {
+            statusNode.textContent = "Статус: Незв'язаний";
+            statusNode.classList.add('tracking-unbound');
+        } else if (desiredState === 'offline') {
             statusNode.textContent = "Статус: Відсутній сигнал";
             statusNode.classList.add('tracking-offline');
         } else {
             statusNode.textContent = "Статус: На зв'язку";
             statusNode.classList.add('tracking-online');
         }
+
+        card.dataset.trackingState = desiredState;
     }
 
     function refreshAllTrackingStatuses() {
@@ -582,6 +594,15 @@
         document.getElementById('tracker-name-modal-overlay').classList.remove('open');
     }
 
+    function toggleTrackerNameModal() {
+        const overlay = document.getElementById('tracker-name-modal-overlay');
+        if (overlay.classList.contains('open')) {
+            closeTrackerNameModal();
+            return;
+        }
+        openTrackerNameModal().catch((e) => console.error('Не вдалося відкрити модалку редагування трекера', e));
+    }
+
     async function openTrackerNameModal() {
         const overlay = document.getElementById('tracker-name-modal-overlay');
         overlay.classList.add('open');
@@ -668,6 +689,15 @@
 
     function closeUsersModal() {
         document.getElementById('users-modal-overlay').classList.remove('open');
+    }
+
+    function toggleUsersModal() {
+        const overlay = document.getElementById('users-modal-overlay');
+        if (overlay.classList.contains('open')) {
+            closeUsersModal();
+            return;
+        }
+        openUsersModal().catch((e) => console.error('Не вдалося відкрити модалку користувачів', e));
     }
 
     async function openUsersModal() {
@@ -779,7 +809,7 @@
         });
 
         document.getElementById('open-edit-tracker-name-modal-btn').addEventListener('click', () => {
-            openTrackerNameModal().catch((e) => console.error('Не вдалося відкрити модалку редагування трекера', e));
+            toggleTrackerNameModal();
         });
         document.getElementById('tracker-name-modal-close-btn').addEventListener('click', closeTrackerNameModal);
         document.getElementById('tracker-name-save-btn').addEventListener('click', () => {
@@ -790,7 +820,7 @@
         });
 
         document.getElementById('open-users-modal-btn').addEventListener('click', () => {
-            openUsersModal().catch((e) => console.error('Не вдалося відкрити модалку користувачів', e));
+            toggleUsersModal();
         });
         document.getElementById('users-modal-close-btn').addEventListener('click', closeUsersModal);
         document.getElementById('users-modal-save-btn').addEventListener('click', () => {
@@ -801,6 +831,10 @@
         });
         document.getElementById('users-modal-overlay').addEventListener('click', (e) => {
             if (e.target.id === 'users-modal-overlay') closeUsersModal();
+        });
+
+        document.getElementById('tracker-name-modal-overlay').addEventListener('click', (e) => {
+            if (e.target.id === 'tracker-name-modal-overlay') closeTrackerNameModal();
         });
     }
 
