@@ -29,7 +29,6 @@
         .status-bar { text-align: center; margin-bottom: 20px; font-size: 0.9em; }
         #status-indicator { font-weight: bold; }
         .toolbar { text-align: center; margin-bottom: 20px; }
-        .toolbar .rent-btn + .rent-btn { margin-left: 10px; }
         .rent-btn {
             background: var(--accent-color);
             color: #fff;
@@ -154,6 +153,16 @@
             padding: 10px 14px;
             cursor: pointer;
         }
+        .floating-toggle-btn {
+            position: fixed;
+            right: 16px;
+            bottom: 16px;
+            padding: 8px 12px;
+            font-size: 0.85em;
+            border-radius: 999px;
+            z-index: 1100;
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+        }
 
         .footer { text-align: center; margin-top: 40px; color: #444; font-size: 0.8em; }
     </style>
@@ -166,8 +175,8 @@
 </div>
 <div class="toolbar">
     <button id="open-rent-modal-btn" class="rent-btn">Аренда</button>
-    <button id="toggle-search-trackers-btn" class="rent-btn">Пошук трекерів: ...</button>
 </div>
+<button id="toggle-search-trackers-btn" class="rent-btn floating-toggle-btn">Пошук: ...</button>
 
 <div id="dashboard-container">
     {% for row in data %}
