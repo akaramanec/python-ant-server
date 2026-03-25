@@ -224,6 +224,22 @@ def is_pair_rental_active(customer_id: int, device_id: int) -> bool:
         """, (customer_id, device_id)).fetchone()
         return row is not None
 
+def get_active_customer_for_device(device_id: int):
+    with get_db_connection() as conn:
+        row = conn.execute("""
+            SELECT customer_id, calories
+            FROM device_rentals
+            WHERE device_id = ? AND finish_at IS NULL
+            ORDER BY start_at DESC
+            LIMIT 1
+        """, (int(device_id),)).fetchone()
+        if not row:
+            return None
+        return {
+            "customer_id": int(row["customer_id"]),
+            "calories": float(row["calories"] or 0.0),
+        }
+
 def stop_pair_rental(customer_id: int, device_id: int) -> int:
     with get_db_connection() as conn:
         now_str = datetime.now().isoformat()
@@ -239,12 +255,21 @@ def start_or_resume_rental(customer_id: int, device_id: int):
     today_str = datetime.now().date().isoformat()
 
     with get_db_connection() as conn:
-        # На одному трекері має бути лише одна активна оренда.
-        conn.execute("""
-            UPDATE device_rentals
-            SET finish_at = ?
+        active = conn.execute("""
+            SELECT customer_id, calories
+            FROM device_rentals
             WHERE device_id = ? AND finish_at IS NULL
-        """, (now_str, device_id))
+            ORDER BY start_at DESC
+            LIMIT 1
+        """, (int(device_id),)).fetchone()
+
+        if active:
+            active_customer_id = int(active["customer_id"])
+            if active_customer_id != int(customer_id):
+                raise ValueError(f"Device {device_id} is already rented by customer {active_customer_id}")
+
+            # Той самий користувач уже орендує цей трекер — просто повертаємо поточні дані.
+            return {"action": "already_active", "calories": float(active["calories"] or 0.0)}
 
         today_rental = conn.execute("""
             SELECT id, finish_at, calories

@@ -371,6 +371,10 @@
                 const data = JSON.parse(event.data);
                 if (data.event === 'rental_stopped') {
                     removeDeviceCard(data.device_id);
+                    const rentOverlay = document.getElementById('rent-modal-overlay');
+                    if (rentOverlay && rentOverlay.classList.contains('open')) {
+                        refreshTrackerAvailability().catch((e) => console.error('Помилка оновлення доступності після stop', e));
+                    }
                     return;
                 }
                 updateHeartRateUI(data);
@@ -564,6 +568,44 @@
         }
         const status = await fetchJson(`/dashboard/rentals/status?customer_id=${customerId}&device_id=${deviceId}`);
         setRentActionButtonState(Boolean(status.active));
+    }
+
+    async function refreshTrackerAvailability() {
+        const userSelect = document.getElementById('rent-user-select');
+        const trackerSelect = document.getElementById('rent-tracker-select');
+        const customerId = Number(userSelect.value);
+        const deviceId = Number(trackerSelect.value);
+
+        if (!deviceId) {
+            // fallback: no tracker selected
+            Array.from(userSelect.options).forEach((opt) => { opt.disabled = false; });
+            await refreshPairRentalStatus();
+            return;
+        }
+
+        const active = await fetchJson(`/dashboard/rentals/active-customer?device_id=${deviceId}`);
+        const activeCustomerId = active.active_customer_id;
+
+        if (activeCustomerId === null) {
+            Array.from(userSelect.options).forEach((opt) => { opt.disabled = false; });
+            await refreshPairRentalStatus();
+            return;
+        }
+
+        const activeIdNum = Number(activeCustomerId);
+
+        // Трекер зайнятий: залишаємо вибір тільки орендатора.
+        Array.from(userSelect.options).forEach((opt) => {
+            const optId = Number(opt.value);
+            opt.disabled = optId !== activeIdNum;
+        });
+
+        // Якщо зараз обрано не того користувача — перемкнемо.
+        if (customerId !== activeIdNum) {
+            userSelect.value = String(activeIdNum);
+        }
+
+        await refreshPairRentalStatus();
     }
 
     async function loadTrackersForNameModal() {
@@ -770,7 +812,7 @@
                 body: JSON.stringify({ customer_id: customerId, device_id: deviceId })
             });
         }
-        await refreshPairRentalStatus();
+        await refreshTrackerAvailability();
     }
 
     async function openRentModal() {
@@ -780,7 +822,7 @@
             await loadRentalOptions();
             rentalDataLoaded = true;
         }
-        await refreshPairRentalStatus();
+        await refreshTrackerAvailability();
     }
 
     function closeRentModal() {
@@ -796,10 +838,10 @@
             onRentActionClick().catch((e) => console.error('Помилка керування орендою', e));
         });
         document.getElementById('rent-user-select').addEventListener('change', () => {
-            refreshPairRentalStatus().catch((e) => console.error('Помилка читання статусу пари', e));
+            refreshTrackerAvailability().catch((e) => console.error('Помилка оновлення доступності трекера', e));
         });
         document.getElementById('rent-tracker-select').addEventListener('change', () => {
-            refreshPairRentalStatus().catch((e) => console.error('Помилка читання статусу пари', e));
+            refreshTrackerAvailability().catch((e) => console.error('Помилка оновлення доступності трекера', e));
         });
         document.getElementById('rent-modal-overlay').addEventListener('click', (e) => {
             if (e.target.id === 'rent-modal-overlay') closeRentModal();

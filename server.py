@@ -100,6 +100,13 @@ async def dashboard_rental_status(customer_id: int, device_id: int):
     is_active = database.is_pair_rental_active(customer_id, device_id)
     return {"active": is_active}
 
+@app.get("/dashboard/rentals/active-customer")
+async def dashboard_active_customer(device_id: int):
+    active = database.get_active_customer_for_device(device_id)
+    if not active:
+        return {"active_customer_id": None}
+    return {"active_customer_id": active["customer_id"]}
+
 @app.put("/dashboard/trackers/{device_id}/name")
 async def dashboard_update_tracker_name(device_id: int, payload: models.TrackerNameUpdate):
     success = database.update_tracker_name(device_id, payload.name)
@@ -137,14 +144,17 @@ async def dashboard_toggle_search_new_trackers():
 
 @app.post("/dashboard/rentals/start")
 async def dashboard_start_rental(rental: models.RentalCreate):
-    result = database.start_or_resume_rental(rental.customer_id, rental.device_id)
-    calories_tracker[rental.device_id] = float(result["calories"] or 0.0)
-    return {
-        "status": "started",
-        "action": result["action"],
-        "device_id": rental.device_id,
-        "customer_id": rental.customer_id
-    }
+    try:
+        result = database.start_or_resume_rental(rental.customer_id, rental.device_id)
+        calories_tracker[rental.device_id] = float(result["calories"] or 0.0)
+        return {
+            "status": "started",
+            "action": result["action"],
+            "device_id": rental.device_id,
+            "customer_id": rental.customer_id
+        }
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
 
 @app.post("/dashboard/rentals/stop")
 async def dashboard_stop_rental(customer_id: int, device_id: int):
@@ -260,6 +270,8 @@ async def start_rental(rental: models.RentalCreate, api_key: str = Depends(verif
         result = database.start_or_resume_rental(rental.customer_id, rental.device_id)
         calories_tracker[rental.device_id] = float(result["calories"] or 0.0)
         return {"status": "started", "action": result["action"], "device_id": rental.device_id}
+    except ValueError as e:
+        raise HTTPException(status_code=409, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
