@@ -67,6 +67,23 @@ async def dashboard_users():
         for row in rows
     ]
 
+@app.get("/dashboard/users/full")
+async def dashboard_users_full():
+    rows = database.get_users_full()
+    return [
+        {
+            "id": row["id"],
+            "first_name": row["first_name"],
+            "last_name": row["last_name"],
+            "middle_name": row["middle_name"],
+            "age": row["age"],
+            "height": row["height"],
+            "weight": row["weight"],
+            "sex": row["sex"]
+        }
+        for row in rows
+    ]
+
 @app.get("/dashboard/trackers")
 async def dashboard_trackers():
     rows = database.get_trackers_for_rental()
@@ -89,6 +106,24 @@ async def dashboard_update_tracker_name(device_id: int, payload: models.TrackerN
     if not success:
         raise HTTPException(status_code=404, detail="Tracker not found or invalid name")
     return {"status": "ok", "device_id": device_id, "name": payload.name}
+
+@app.post("/dashboard/users")
+async def dashboard_create_user(user: models.UserCreate):
+    with database.get_db_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute("""
+            INSERT INTO users (first_name, last_name, middle_name, age, height, weight, sex)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        """, (user.first_name, user.last_name, user.middle_name, user.age, user.height, user.weight, user.sex))
+        return {"status": "success", "user_id": cursor.lastrowid}
+
+@app.put("/dashboard/users/{user_id}")
+async def dashboard_update_user(user_id: int, payload: models.UserUpdate):
+    update_data = payload.dict(exclude_unset=True)
+    success = database.update_user(user_id, update_data)
+    if not success:
+        raise HTTPException(status_code=404, detail="User not found or no fields updated")
+    return {"status": "ok", "user_id": user_id}
 
 @app.get("/dashboard/settings/search-new-trackers")
 async def dashboard_get_search_new_trackers():

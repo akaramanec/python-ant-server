@@ -195,6 +195,16 @@ def get_users_for_rental():
             ORDER BY last_name, first_name
         """).fetchall()
 
+def get_users_full():
+    with get_db_connection() as conn:
+        return conn.execute("""
+            SELECT id,
+                   first_name, last_name, middle_name,
+                   age, height, weight, sex
+            FROM users
+            ORDER BY last_name, first_name
+        """).fetchall()
+
 def get_trackers_for_rental():
     with get_db_connection() as conn:
         return conn.execute("""
