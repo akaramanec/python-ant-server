@@ -26,9 +26,15 @@ def init_db():
             CREATE TABLE IF NOT EXISTS trackers (
             device_id INTEGER PRIMARY KEY,
             name VARCHAR(250) NOT NULL,
+            correction_factor REAL DEFAULT 1.0,
             is_active BOOLEAN DEFAULT 1
             );
         """)
+        # Для вже існуючих БД (де колонка ще не додана)
+        try:
+            conn.execute("ALTER TABLE trackers ADD COLUMN correction_factor REAL DEFAULT 1.0")
+        except sqlite3.OperationalError:
+            pass
         conn.execute("""
             INSERT OR IGNORE INTO settings (key, name, value)
             VALUES ('search_new_trackers', 'Пошук нових трекерів', '0')
@@ -105,10 +111,12 @@ def get_dashboard_data():
     with get_db_connection() as conn:
         query = """
             SELECT r.device_id, u.first_name, u.last_name, r.start_at, u.age, u.weight,
-                   h.hr, h.timestamp as ts, r.calories
+                   CAST(ROUND(h.hr * COALESCE(t.correction_factor, 1.0), 0) AS INTEGER) as hr,
+                   h.timestamp as ts, r.calories
             FROM device_rentals r
             JOIN users u ON r.customer_id = u.id
             LEFT JOIN heart_rates h ON r.device_id = h.device_id
+            LEFT JOIN trackers t ON r.device_id = t.device_id
             WHERE r.finish_at IS NULL
               AND (h.timestamp = (SELECT MAX(timestamp) FROM heart_rates WHERE device_id = r.device_id) OR h.timestamp IS NULL)
             ORDER BY h.timestamp DESC
@@ -162,6 +170,22 @@ def tracker_exists(device_id) -> bool:
         ).fetchone()
         return row is not None
 
+def get_tracker_correction_factor(device_id: int) -> float:
+    with get_db_connection() as conn:
+        row = conn.execute("""
+            SELECT correction_factor
+            FROM trackers
+            WHERE device_id = ?
+            LIMIT 1
+        """, (int(device_id),)).fetchone()
+        if not row:
+            return 1.0
+        try:
+            value = float(row["correction_factor"])
+            return value if value > 0 else 1.0
+        except (TypeError, ValueError):
+            return 1.0
+
 def add_tracker_if_missing(device_id, name: str = None):
     device_id = int(device_id)
     tracker_name = name if name is not None else str(device_id)
@@ -208,11 +232,34 @@ def get_users_full():
 def get_trackers_for_rental():
     with get_db_connection() as conn:
         return conn.execute("""
-            SELECT device_id, name
+            SELECT device_id, name, correction_factor
             FROM trackers
             WHERE is_active = 1
             ORDER BY name
         """).fetchall()
+
+def update_tracker_settings(device_id: int, name: str, correction_factor: float) -> bool:
+    device_id = int(device_id)
+    if name is None:
+        return False
+    new_name = str(name).strip()
+    if not new_name:
+        return False
+
+    try:
+        new_factor = float(correction_factor)
+    except (TypeError, ValueError):
+        return False
+    if new_factor <= 0:
+        return False
+
+    with get_db_connection() as conn:
+        cursor = conn.execute("""
+            UPDATE trackers
+            SET name = ?, correction_factor = ?
+            WHERE device_id = ?
+        """, (new_name, new_factor, device_id))
+        return cursor.rowcount > 0
 
 def is_pair_rental_active(customer_id: int, device_id: int) -> bool:
     with get_db_connection() as conn:

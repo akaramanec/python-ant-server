@@ -287,6 +287,10 @@
             <label for="tracker-name-input">Нова назва</label>
             <input id="tracker-name-input" type="text" style="width:100%; padding:10px; border-radius:8px; border:1px solid #355; background:#0f1d35; color:#fff;" />
         </div>
+        <div class="modal-row">
+            <label for="tracker-factor-input">Коефіцієнт коректировки</label>
+            <input id="tracker-factor-input" type="number" step="0.01" min="0.01" value="1" style="width:100%; padding:10px; border-radius:8px; border:1px solid #355; background:#0f1d35; color:#fff;" />
+        </div>
         <div class="modal-actions modal-actions-space">
             <button id="toggle-search-trackers-btn" class="rent-btn btn-start modal-toggle-search-btn" type="button">Пошук трекерів: ...</button>
             <div class="right-actions">
@@ -629,7 +633,9 @@
         const deviceId = Number(trackerSelect.value);
         const current = trackersForNameModalCache.find((t) => Number(t.device_id) === deviceId);
         const input = document.getElementById('tracker-name-input');
+        const factorInput = document.getElementById('tracker-factor-input');
         input.value = current && current.name ? current.name : '';
+        factorInput.value = current && current.correction_factor ? String(current.correction_factor) : '1';
     }
 
     function closeTrackerNameModal() {
@@ -657,17 +663,23 @@
         const deviceId = Number(trackerSelect.value);
         const newNameRaw = document.getElementById('tracker-name-input').value;
         const trimmed = String(newNameRaw || '').trim();
+        const factorRaw = document.getElementById('tracker-factor-input').value;
+        const correctionFactor = Number(factorRaw);
 
         if (!deviceId) return;
         if (!trimmed) {
             alert('Назва не може бути порожньою.');
             return;
         }
+        if (!Number.isFinite(correctionFactor) || correctionFactor <= 0) {
+            alert('Коефіцієнт має бути числом більше 0.');
+            return;
+        }
 
-        await fetchJson(`/dashboard/trackers/${deviceId}/name`, {
+        await fetchJson(`/dashboard/trackers/${deviceId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: trimmed })
+            body: JSON.stringify({ name: trimmed, correction_factor: correctionFactor })
         });
 
         // Оновимо списки в UI (орендні селектори теж залежать від trackers).

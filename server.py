@@ -90,7 +90,8 @@ async def dashboard_trackers():
     return [
         {
             "device_id": row["device_id"],
-            "name": row["name"]
+            "name": row["name"],
+            "correction_factor": row["correction_factor"]
         }
         for row in rows
     ]
@@ -113,6 +114,18 @@ async def dashboard_update_tracker_name(device_id: int, payload: models.TrackerN
     if not success:
         raise HTTPException(status_code=404, detail="Tracker not found or invalid name")
     return {"status": "ok", "device_id": device_id, "name": payload.name}
+
+@app.put("/dashboard/trackers/{device_id}")
+async def dashboard_update_tracker(device_id: int, payload: models.TrackerUpdate):
+    success = database.update_tracker_settings(device_id, payload.name, payload.correction_factor)
+    if not success:
+        raise HTTPException(status_code=404, detail="Tracker not found or invalid payload")
+    return {
+        "status": "ok",
+        "device_id": device_id,
+        "name": payload.name,
+        "correction_factor": payload.correction_factor
+    }
 
 @app.post("/dashboard/users")
 async def dashboard_create_user(user: models.UserCreate):
@@ -193,6 +206,9 @@ async def log_heart_rate(request: Request, api_key: str = Depends(verify_api_key
 
         user = database.get_active_user(d_id)
         if user:
+            correction_factor = database.get_tracker_correction_factor(d_id)
+            hr_corrected = int(round(float(hr) * correction_factor))
+
             if d_id not in calories_tracker or calories_tracker[d_id] == 0:
                 calories_tracker[d_id] = float(user['calories'] or 0.0)
 
@@ -215,7 +231,7 @@ async def log_heart_rate(request: Request, api_key: str = Depends(verify_api_key
                 "first_name": user['first_name'],
                 "last_name": user['last_name'],
                 "fitness_time": fitness_time,
-                "hr": hr,
+                "hr": hr_corrected,
                 "calories": round(calories_tracker[d_id], 1),
                 "ts": ts
             })

@@ -28,3 +28,7 @@ class SearchNewTrackersUpdate(BaseModel):
 
 class TrackerNameUpdate(BaseModel):
     name: str
+
+class TrackerUpdate(BaseModel):
+    name: str
+    correction_factor: float
