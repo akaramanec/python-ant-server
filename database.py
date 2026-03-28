@@ -1,5 +1,8 @@
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timedelta
+from collections import defaultdict
+
+import utils
 from config import DB_FILE
 
 def init_db():
@@ -169,6 +172,171 @@ def tracker_exists(device_id) -> bool:
             (device_id,)
         ).fetchone()
         return row is not None
+
+def _parse_ts(ts):
+    if ts is None:
+        return None
+    s = str(ts).strip()
+    if s.endswith("Z"):
+        s = s[:-1] + "+00:00"
+    # SQLite часто зберігає heart_rates як "YYYY-MM-DD HH:MM:SS" без T — для fromisoformat
+    if len(s) >= 19 and s[10] == " ":
+        s = s[:10] + "T" + s[11:]
+    elif " " in s and "T" not in s[:11]:
+        s = s.replace(" ", "T", 1)
+    try:
+        return datetime.fromisoformat(s)
+    except ValueError:
+        return None
+
+
+def _format_duration(seconds: float) -> str:
+    sec = int(round(max(0.0, seconds)))
+    return str(timedelta(seconds=sec)).split(".")[0]
+
+
+def _aggregate_day_samples(rows_sorted):
+    """
+    rows_sorted: список записів одного дня / одного трекера / одного клієнта, за часом зростання.
+    Ккал і час як при live-логу: інтервали між сусідніми записами з 0 < Δ < 10 с;
+    для ккал — формула Keytel, HR з коефіцієнтом трекера (на кожному зразку), вік/вага/стать користувача.
+    """
+    if not rows_sorted:
+        return 0.0, 0.0
+    total_sec = 0.0
+    total_kcal = 0.0
+    prev_dt = None
+
+    for s in rows_sorted:
+        dt = _parse_ts(s["timestamp"])
+        if dt is None:
+            continue
+        age = s["age"]
+        weight = s["weight"]
+        sex = s["sex"] or "male"
+        cf = float(s["correction_factor"] or 1.0)
+        if cf <= 0:
+            cf = 1.0
+        hr_raw = float(s["hr"] or 0)
+        hr_corr = int(round(hr_raw * cf))
+        if prev_dt is not None:
+            delta = (dt - prev_dt).total_seconds()
+            if 0 < delta < 10:
+                total_sec += delta
+                total_kcal += utils.calculate_calories(hr_corr, age, weight, sex, delta)
+        prev_dt = dt
+
+    return total_sec, round(total_kcal, 1)
+
+
+def get_daily_training_history(
+    device_id=None,
+    customer_id=None,
+    filter_date=None,
+    sort_by="day",
+    sort_dir="desc",
+    limit=500,
+    offset=0,
+    raw_row_cap=100000,
+):
+    """
+    Агрегати по календарному дню + трекер + клієнт: час тренування та ккал з БД heart_rates
+    (інтервали між зразками, як у /log) з урахуванням correction_factor та показників користувача.
+    """
+    # Порівняння часу лише через julianday: у heart_rates часто "YYYY-MM-DD HH:MM:SS",
+    # у rentals — ISO з "T"; текстове h.timestamp >= r.start_at дає хибний false (пробіл < 'T').
+    where_clauses = []
+    params = []
+
+    if device_id is not None:
+        where_clauses.append("h.device_id = ?")
+        params.append(int(device_id))
+
+    if customer_id is not None:
+        where_clauses.append("r.customer_id = ?")
+        params.append(int(customer_id))
+
+    if filter_date:
+        where_clauses.append("date(h.timestamp) = date(?)")
+        params.append(filter_date)
+
+    where_sql = " AND ".join(where_clauses) if where_clauses else "1=1"
+
+    query = f"""
+        SELECT
+            h.device_id AS device_id,
+            h.timestamp AS timestamp,
+            h.hr AS hr,
+            r.customer_id AS customer_id,
+            u.age AS age,
+            u.weight AS weight,
+            u.sex AS sex,
+            t.name AS device_name,
+            COALESCE(t.correction_factor, 1.0) AS correction_factor,
+            TRIM(COALESCE(u.last_name, '') || ' ' || COALESCE(u.first_name, '')) AS customer_fullname
+        FROM heart_rates h
+        INNER JOIN trackers t ON t.device_id = h.device_id
+        INNER JOIN device_rentals r ON r.id = (
+            SELECT r2.id
+            FROM device_rentals r2
+            WHERE r2.device_id = h.device_id
+              AND julianday(h.timestamp) >= julianday(r2.start_at)
+              AND (
+                  r2.finish_at IS NULL
+                  OR julianday(h.timestamp) <= julianday(r2.finish_at)
+              )
+            ORDER BY julianday(r2.start_at) DESC
+            LIMIT 1
+        )
+        INNER JOIN users u ON u.id = r.customer_id
+        WHERE {where_sql}
+        ORDER BY h.timestamp DESC
+        LIMIT ?
+    """
+    params.append(min(int(raw_row_cap), 200000))
+
+    with get_db_connection() as conn:
+        raw = [dict(row) for row in conn.execute(query, params).fetchall()]
+        raw.reverse()
+
+    groups = defaultdict(list)
+    for row in raw:
+        dt = _parse_ts(row["timestamp"])
+        if dt is None:
+            continue
+        day = dt.date().isoformat()
+        key = (day, row["device_id"], row["customer_id"])
+        groups[key].append(row)
+
+    results = []
+    for (day, _dev, _cust), samples in groups.items():
+        samples.sort(key=lambda x: str(x["timestamp"]))
+        sec, kcal = _aggregate_day_samples(samples)
+        first = samples[0]
+        results.append({
+            "day": day,
+            "device_name": first["device_name"],
+            "customer_fullname": first["customer_fullname"],
+            "training_seconds": round(sec, 2),
+            "training_time": _format_duration(sec),
+            "calories": kcal,
+        })
+
+    reverse = str(sort_dir).lower() == "desc"
+    sort_keys = {
+        "day": lambda r: r["day"],
+        "device_name": lambda r: (r["device_name"] or "").lower(),
+        "customer_fullname": lambda r: (r["customer_fullname"] or "").lower(),
+        "training_seconds": lambda r: r["training_seconds"],
+        "calories": lambda r: r["calories"],
+    }
+    key_fn = sort_keys.get(sort_by) or sort_keys["day"]
+    results.sort(key=key_fn, reverse=reverse)
+
+    off = max(0, int(offset))
+    lim = min(int(limit), 2000)
+    return results[off : off + lim]
+
 
 def get_tracker_correction_factor(device_id: int) -> float:
     with get_db_connection() as conn:

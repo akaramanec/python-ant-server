@@ -26,14 +26,6 @@
 
         h1 { text-align: center; color: #fff; text-transform: uppercase; letter-spacing: 2px; }
 
-        .top-links { text-align: center; margin-bottom: 16px; }
-        .top-links a {
-            color: #8ab4f8;
-            text-decoration: none;
-            font-size: 0.95em;
-        }
-        .top-links a:hover { text-decoration: underline; }
-
         .toolbar { text-align: center; margin-bottom: 20px; }
         .rent-btn {
             background: var(--accent-color);
@@ -150,18 +142,262 @@
         }
 
         .ts-value { font-size: 0.7em; color: #555; margin-top: 10px; }
+
+        .history-block {
+            max-width: 1200px;
+            margin: 28px auto 48px;
+            padding: 0 12px;
+        }
+        .history-heading {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #cfd8dc;
+            margin: 0 0 8px;
+            text-align: center;
+        }
+        .history-hint {
+            font-size: 0.8rem;
+            color: #78909c;
+            line-height: 1.45;
+            max-width: 720px;
+            margin: 0 auto 18px;
+            text-align: center;
+        }
+        .history-filters {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: flex-end;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .history-filters > .hist-field {
+            flex: 1 1 200px;
+            min-width: min(100%, 180px);
+            max-width: 100%;
+        }
+        .history-filters > .hist-field-buttons {
+            flex: 0 0 auto;
+            min-width: 0;
+        }
+        .hist-field label {
+            display: block;
+            font-size: 0.8rem;
+            color: #9e9e9e;
+            margin-bottom: 4px;
+        }
+        .hist-field input[type="search"],
+        .hist-field input[type="date"],
+        .hist-field select {
+            width: 100%;
+            padding: 8px 10px;
+            border-radius: 8px;
+            border: 1px solid #355;
+            background: #0f1d35;
+            color: #fff;
+            box-sizing: border-box;
+        }
+        .hist-field select {
+            margin-top: 6px;
+        }
+        .hist-field-buttons .hist-buttons-row {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 2px;
+            align-items: center;
+        }
+        .hist-icon-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 42px;
+            height: 42px;
+            padding: 0;
+            border-radius: 8px;
+            border: 1px solid #355;
+            background: #0f1d35;
+            color: #cfd8dc;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+        .hist-icon-btn:hover {
+            background: #1a2d4d;
+            color: #fff;
+        }
+        .hist-icon-btn-primary {
+            background: var(--success);
+            border-color: #2e7d32;
+            color: #fff;
+        }
+        .hist-icon-btn-primary:hover {
+            opacity: 0.92;
+            filter: brightness(1.05);
+        }
+        .hist-icon-btn svg {
+            display: block;
+        }
+        .history-table-wrap {
+            overflow: auto;
+            max-height: min(70vh, 560px);
+            border: 1px solid var(--accent-color);
+            border-radius: 10px;
+            background: rgba(15, 29, 53, 0.5);
+            scrollbar-width: thin;
+            scrollbar-color: #345c8f #0f1d35;
+        }
+        .history-table-wrap::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+        .history-table-wrap::-webkit-scrollbar-track {
+            background: #0f1d35;
+            border-radius: 8px;
+        }
+        .history-table-wrap::-webkit-scrollbar-thumb {
+            background: linear-gradient(180deg, #3d5a80, #2a4a6e);
+            border-radius: 8px;
+            border: 2px solid #0f1d35;
+        }
+        .history-table-wrap::-webkit-scrollbar-thumb:hover {
+            background: linear-gradient(180deg, #4a6fa8, #345c8f);
+        }
+        .history-table-wrap::-webkit-scrollbar-corner {
+            background: #0f1d35;
+        }
+        .history-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.88rem;
+        }
+        .history-table th,
+        .history-table td {
+            padding: 10px 12px;
+            text-align: left;
+            border-bottom: 1px solid #2a3f5f;
+        }
+        .history-table th {
+            position: sticky;
+            top: 0;
+            background: #16213e;
+            z-index: 1;
+            color: #b0bec5;
+            font-weight: 600;
+        }
+        .history-table th.sortable {
+            cursor: pointer;
+            user-select: none;
+            white-space: nowrap;
+        }
+        .history-table th.sortable:hover {
+            background: #1a2847;
+        }
+        .history-table th.sortable .sort-arrow {
+            display: inline-block;
+            margin-left: 6px;
+            font-size: 0.65em;
+            vertical-align: middle;
+            color: #8ab4f8;
+            min-width: 0.9em;
+        }
+        .history-table th.sortable:not(.sorted) .sort-arrow::before {
+            content: '▲▼';
+            letter-spacing: -3px;
+            opacity: 0.28;
+            font-size: 0.85em;
+        }
+        .history-table th.sortable.sorted.asc .sort-arrow::before {
+            content: '▲';
+            opacity: 1;
+        }
+        .history-table th.sortable.sorted.desc .sort-arrow::before {
+            content: '▼';
+            opacity: 1;
+        }
+        .history-table tbody tr:hover {
+            background: rgba(15, 52, 96, 0.35);
+        }
+        .history-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+        .history-empty {
+            text-align: center;
+            color: #78909c;
+            padding: 24px;
+        }
     </style>
 </head>
 <body>
 <h1>Адміністрування</h1>
 
-<div class="top-links">
-    <a href="/">← На дашборд</a>
-</div>
-
 <div class="toolbar">
     <button id="open-rent-modal-btn" class="rent-btn">Оренда</button>
 </div>
+
+<section class="history-block" aria-labelledby="history-heading">
+    <h2 id="history-heading" class="history-heading">Історія тренувань</h2>
+    <p class="history-hint">Рядки згруповані за <strong>календарним днем</strong>, трекером і користувачем. Час і ккал пораховані з записів пульсу (інтервали &lt; 10 с), з коефіцієнтом трекера та віком/вагою/статтю для формули спалювання.</p>
+    <div class="history-filters">
+        <div class="hist-field">
+            <label for="history-device-search">Трекер (пошук)</label>
+            <input type="search" id="history-device-search" placeholder="Фільтр назви…" autocomplete="off" />
+            <select id="history-device-select">
+                <option value="">Усі трекери</option>
+            </select>
+        </div>
+        <div class="hist-field">
+            <label for="history-customer-search">Користувач (пошук)</label>
+            <input type="search" id="history-customer-search" placeholder="Прізвище, ім'я…" autocomplete="off" />
+            <select id="history-customer-select">
+                <option value="">Усі</option>
+            </select>
+        </div>
+        <div class="hist-field">
+            <label for="history-filter-date">Дата</label>
+            <input type="date" id="history-filter-date" />
+        </div>
+        <div class="hist-field hist-field-buttons">
+            <label id="history-actions-label">Дії</label>
+            <div class="hist-buttons-row" role="group" aria-labelledby="history-actions-label">
+                <button type="button" id="history-apply-btn" class="hist-icon-btn hist-icon-btn-primary" title="Застосувати" aria-label="Застосувати фільтри та оновити таблицю">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="m21 21-4.3-4.3"/>
+                    </svg>
+                </button>
+                <button type="button" id="history-reset-btn" class="hist-icon-btn" title="Скинути" aria-label="Скинути фільтри й сортування таблиці">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+                        <path d="M18 6 6 18"/>
+                        <path d="m6 6 12 12"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+    <div class="history-table-wrap">
+        <table class="history-table">
+            <thead id="history-table-head">
+                <tr>
+                    <th class="sortable" data-sort-key="day" scope="col" title="Сортувати">
+                        Дата<span class="sort-arrow" aria-hidden="true"></span>
+                    </th>
+                    <th class="sortable" data-sort-key="device_name" scope="col" title="Сортувати">
+                        Трекер<span class="sort-arrow" aria-hidden="true"></span>
+                    </th>
+                    <th class="sortable" data-sort-key="customer_fullname" scope="col" title="Сортувати">
+                        Користувач<span class="sort-arrow" aria-hidden="true"></span>
+                    </th>
+                    <th class="sortable" data-sort-key="training_seconds" scope="col" title="Сортувати">
+                        Час тренування<span class="sort-arrow" aria-hidden="true"></span>
+                    </th>
+                    <th class="sortable" data-sort-key="calories" scope="col" title="Сортувати">
+                        ккал (розрах.)<span class="sort-arrow" aria-hidden="true"></span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody id="history-table-body">
+                <tr><td colspan="5" class="history-empty">Завантаження…</td></tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
 <button id="open-edit-tracker-name-modal-btn" class="floating-edit-tracker-btn">Трекери</button>
 <button id="open-users-modal-btn" class="floating-users-btn">Користувачі</button>
 
@@ -264,6 +500,174 @@
     let rentalDataLoaded = false;
     let trackersForNameModalCache = [];
     let usersForUsersModalCache = [];
+    let historyDevicesCache = [];
+    let historyUsersCache = [];
+    let historySortBy = 'day';
+    let historySortDir = 'desc';
+
+    function updateHistorySortHeaders() {
+        document.querySelectorAll('#history-table-head th.sortable').forEach((th) => {
+            const key = th.dataset.sortKey;
+            th.classList.remove('sorted', 'asc', 'desc');
+            th.removeAttribute('aria-sort');
+            if (key === historySortBy) {
+                th.classList.add('sorted', historySortDir === 'asc' ? 'asc' : 'desc');
+                th.setAttribute('aria-sort', historySortDir === 'asc' ? 'ascending' : 'descending');
+            }
+        });
+    }
+
+    function onHistorySortClick(sortKey) {
+        if (sortKey === historySortBy) {
+            historySortDir = historySortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            historySortBy = sortKey;
+            if (sortKey === 'device_name' || sortKey === 'customer_fullname') {
+                historySortDir = 'asc';
+            } else {
+                historySortDir = 'desc';
+            }
+        }
+        updateHistorySortHeaders();
+        loadHistory().catch((e) => console.error('Історія', e));
+    }
+
+    function escHtml(s) {
+        return String(s ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;');
+    }
+
+    function buildHistoryDeviceSelect(filterText) {
+        const sel = document.getElementById('history-device-select');
+        const q = (filterText || '').trim().toLowerCase();
+        const cur = sel.value;
+        const parts = [{ value: '', label: 'Усі трекери' }];
+        historyDevicesCache.forEach((t) => {
+            const label = `${t.name} (ID: ${t.device_id})`;
+            if (!q || label.toLowerCase().includes(q) || String(t.device_id).includes(q)) {
+                parts.push({ value: String(t.device_id), label });
+            }
+        });
+        sel.innerHTML = parts.map((o) => `<option value="${escHtml(o.value)}">${escHtml(o.label)}</option>`).join('');
+        if (parts.some((o) => o.value === cur)) sel.value = cur;
+    }
+
+    function buildHistoryUserSelect(filterText) {
+        const sel = document.getElementById('history-customer-select');
+        const q = (filterText || '').trim().toLowerCase();
+        const cur = sel.value;
+        const parts = [{ value: '', label: 'Усі' }];
+        historyUsersCache.forEach((u) => {
+            const label = `${u.last_name} ${u.first_name} (ID: ${u.id})`;
+            if (!q || label.toLowerCase().includes(q) || String(u.id).includes(q)) {
+                parts.push({ value: String(u.id), label });
+            }
+        });
+        sel.innerHTML = parts.map((o) => `<option value="${escHtml(o.value)}">${escHtml(o.label)}</option>`).join('');
+        if (parts.some((o) => o.value === cur)) sel.value = cur;
+    }
+
+    async function loadHistoryMeta() {
+        const [trackers, users] = await Promise.all([
+            fetchJson('/dashboard/trackers'),
+            fetchJson('/dashboard/users'),
+        ]);
+        historyDevicesCache = trackers;
+        historyUsersCache = users;
+        buildHistoryDeviceSelect(document.getElementById('history-device-search').value);
+        buildHistoryUserSelect(document.getElementById('history-customer-search').value);
+    }
+
+    async function loadHistory() {
+        const tbody = document.getElementById('history-table-body');
+        tbody.innerHTML = '<tr><td colspan="5" class="history-empty">Завантаження…</td></tr>';
+        const params = new URLSearchParams();
+        const dev = document.getElementById('history-device-select').value;
+        const cust = document.getElementById('history-customer-select').value;
+        const d = document.getElementById('history-filter-date').value;
+        if (dev) params.set('device_id', dev);
+        if (cust) params.set('customer_id', cust);
+        if (d) params.set('filter_date', d);
+        params.set('sort_by', historySortBy);
+        params.set('sort_dir', historySortDir);
+        params.set('limit', '500');
+        try {
+            const data = await fetchJson('/dashboard/history?' + params.toString());
+            const rows = data.rows || [];
+            if (rows.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="5" class="history-empty">Немає записів за умовами фільтра</td></tr>';
+                return;
+            }
+            tbody.innerHTML = '';
+            rows.forEach((row) => {
+                const tr = document.createElement('tr');
+                let dayStr = row.day ?? '';
+                if (dayStr && /^\d{4}-\d{2}-\d{2}$/.test(dayStr)) {
+                    try {
+                        const d = new Date(dayStr + 'T12:00:00');
+                        if (!Number.isNaN(d.getTime())) {
+                            dayStr = d.toLocaleDateString('uk-UA', { year: 'numeric', month: '2-digit', day: '2-digit' });
+                        }
+                    } catch (e) { /* ignore */ }
+                }
+                const kcalStr = row.calories != null && row.calories !== ''
+                    ? Number(row.calories).toFixed(1)
+                    : '—';
+                tr.innerHTML = `
+                    <td>${escHtml(dayStr)}</td>
+                    <td>${escHtml(row.device_name ?? '')}</td>
+                    <td>${escHtml(row.customer_fullname ?? '')}</td>
+                    <td class="num">${escHtml(row.training_time ?? '0:00:00')}</td>
+                    <td class="num">${escHtml(kcalStr)}</td>`;
+                tbody.appendChild(tr);
+            });
+        } catch (e) {
+            console.error(e);
+            tbody.innerHTML = '<tr><td colspan="5" class="history-empty">Помилка завантаження</td></tr>';
+        }
+    }
+
+    async function resetHistoryFiltersAndSort() {
+        document.getElementById('history-device-search').value = '';
+        document.getElementById('history-customer-search').value = '';
+        document.getElementById('history-filter-date').value = '';
+        historySortBy = 'day';
+        historySortDir = 'desc';
+        buildHistoryDeviceSelect('');
+        buildHistoryUserSelect('');
+        document.getElementById('history-device-select').value = '';
+        document.getElementById('history-customer-select').value = '';
+        updateHistorySortHeaders();
+        await loadHistory();
+    }
+
+    function initHistorySection() {
+        updateHistorySortHeaders();
+        document.getElementById('history-table-head').addEventListener('click', (e) => {
+            const th = e.target.closest('th.sortable');
+            if (!th || !th.dataset.sortKey) return;
+            e.preventDefault();
+            onHistorySortClick(th.dataset.sortKey);
+        });
+        document.getElementById('history-device-search').addEventListener('input', () => {
+            buildHistoryDeviceSelect(document.getElementById('history-device-search').value);
+        });
+        document.getElementById('history-customer-search').addEventListener('input', () => {
+            buildHistoryUserSelect(document.getElementById('history-customer-search').value);
+        });
+        document.getElementById('history-apply-btn').addEventListener('click', () => {
+            loadHistory().catch((e) => console.error('Історія', e));
+        });
+        document.getElementById('history-reset-btn').addEventListener('click', () => {
+            resetHistoryFiltersAndSort().catch((e) => console.error('Скидання історії', e));
+        });
+        loadHistoryMeta()
+            .then(() => loadHistory())
+            .catch((e) => console.error('Метадані історії', e));
+    }
 
     async function fetchJson(url, options = {}) {
         const response = await fetch(url, options);
@@ -444,6 +848,9 @@
 
         await loadRentalOptions();
         await loadTrackersForNameModal();
+        loadHistoryMeta()
+            .then(() => buildHistoryDeviceSelect(document.getElementById('history-device-search').value))
+            .catch((e) => console.error('Оновлення списку трекерів для історії', e));
         closeTrackerNameModal();
     }
 
@@ -565,6 +972,9 @@
 
         closeUsersModal();
         await loadRentalOptions();
+        loadHistoryMeta()
+            .then(() => buildHistoryUserSelect(document.getElementById('history-customer-search').value))
+            .catch((e) => console.error('Оновлення списку користувачів для історії', e));
     }
 
     async function onRentActionClick() {
@@ -653,6 +1063,7 @@
 
     document.addEventListener('DOMContentLoaded', () => {
         initRentModalHandlers();
+        initHistorySection();
         refreshSearchTrackersButtonState().catch((e) => console.error('Не вдалося отримати стан пошуку трекерів', e));
     });
 </script>

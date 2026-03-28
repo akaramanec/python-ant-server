@@ -344,6 +344,7 @@ python3 migration_seed_test_users.py
 - `POST /dashboard/rentals/stop`
 - `GET /dashboard/settings/search-new-trackers`
 - `POST /dashboard/settings/search-new-trackers/toggle`
+- `GET /dashboard/history` — зведення **по дню** (трекер + користувач): час тренування та ккал з БД пульсу (інтервали &lt; 10 с, Keytel, скоригований HR, дані користувача); фільтри: `device_id`, `customer_id`, `filter_date`; сортування: `sort_by` ∈ `day`, `device_name`, `customer_fullname`, `training_seconds`, `calories`, `sort_dir`, `limit`, `offset`
 
 ## 13) Troubleshooting
 

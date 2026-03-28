@@ -1,4 +1,6 @@
-from fastapi import FastAPI, Request, HTTPException, Depends, WebSocket, WebSocketDisconnect
+from typing import Optional
+
+from fastapi import FastAPI, Request, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query
 from fastapi.responses import HTMLResponse
 from fastapi.templating import Jinja2Templates
 from fastapi.security.api_key import APIKeyHeader
@@ -173,6 +175,30 @@ async def dashboard_start_rental(rental: models.RentalCreate):
         }
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
+
+@app.get("/dashboard/history")
+async def dashboard_history(
+    device_id: Optional[int] = None,
+    customer_id: Optional[int] = None,
+    filter_date: Optional[str] = None,
+    sort_by: str = "day",
+    sort_dir: str = "desc",
+    limit: int = Query(500, le=2000, ge=1),
+    offset: int = Query(0, ge=0),
+):
+    allowed_sort = {"day", "device_name", "customer_fullname", "training_seconds", "calories"}
+    if sort_by not in allowed_sort:
+        sort_by = "day"
+    rows = database.get_daily_training_history(
+        device_id=device_id,
+        customer_id=customer_id,
+        filter_date=filter_date,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
+        limit=limit,
+        offset=offset,
+    )
+    return {"rows": rows}
 
 @app.post("/dashboard/rentals/stop")
 async def dashboard_stop_rental(customer_id: int, device_id: int):
