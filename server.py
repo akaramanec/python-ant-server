@@ -1,7 +1,9 @@
+import base64
+import secrets
 from typing import Optional
 
 from fastapi import FastAPI, Request, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,6 +26,55 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+
+def _admin_basic_unauthorized():
+    return Response(
+        status_code=401,
+        headers={"WWW-Authenticate": 'Basic realm="SmartFizruk Admin"'},
+    )
+
+
+def _admin_not_configured():
+    return Response(
+        status_code=403,
+        content="Адмін-зона недоступна: задайте ADMIN_USERNAME та ADMIN_PASSWORD у .env на сервері.",
+        media_type="text/plain; charset=utf-8",
+    )
+
+
+@app.middleware("http")
+async def admin_area_auth(request: Request, call_next):
+    """Захист /admin та /dashboard/*: без повних облікових у .env — 403; інакше HTTP Basic.
+    Головний дашборд / (картки) та /ws — без пароля."""
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    path = request.url.path
+    # Головний TV-дашборд і live-канал не закриваємо (не плутати з API /dashboard/* для адмінки).
+    if path == "/" or path == "/ws":
+        return await call_next(request)
+    if path != "/admin" and not path.startswith("/dashboard"):
+        return await call_next(request)
+    # Адмін-зона: без обох змінних у .env — зовсім без доступу (не «відкрито для розробки»).
+    if not config.ADMIN_AUTH_ENABLED:
+        return _admin_not_configured()
+    auth = request.headers.get("Authorization")
+    if not auth or not auth.startswith("Basic "):
+        return _admin_basic_unauthorized()
+    try:
+        raw = base64.b64decode(auth[6:].strip()).decode("utf-8")
+        if ":" not in raw:
+            return _admin_basic_unauthorized()
+        username, password = raw.split(":", 1)
+    except Exception:
+        return _admin_basic_unauthorized()
+    ok = secrets.compare_digest(username, config.ADMIN_USERNAME) and secrets.compare_digest(
+        password, config.ADMIN_PASSWORD
+    )
+    if not ok:
+        return _admin_basic_unauthorized()
+    return await call_next(request)
+
 
 templates = Jinja2Templates(directory="templates")
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
