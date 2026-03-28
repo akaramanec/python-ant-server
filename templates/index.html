@@ -28,17 +28,6 @@
 
         .status-bar { text-align: center; margin-bottom: 20px; font-size: 0.9em; }
         #status-indicator { font-weight: bold; }
-        .toolbar { text-align: center; margin-bottom: 20px; }
-        .rent-btn {
-            background: var(--accent-color);
-            color: #fff;
-            border: 1px solid #345c8f;
-            border-radius: 8px;
-            padding: 10px 20px;
-            cursor: pointer;
-            font-size: 1em;
-        }
-        .rent-btn:hover { opacity: 0.9; }
 
         #dashboard-container {
             display: grid;
@@ -60,7 +49,6 @@
             justify-content: space-between;
         }
 
-        /* Фіксована висота для блоку імені (2 рядки по ~1.2em + margin) */
         .user-name-block {
             height: 3em;
             display: flex;
@@ -107,118 +95,6 @@
         .tracking-online { color: var(--success); }
         .tracking-offline { color: var(--danger); }
         .tracking-unbound { color: #9e9e9e; }
-        .btn-start { background: var(--success); border-color: #2e7d32; }
-        .btn-stop { background: var(--danger); border-color: #b71c1c; }
-
-        .modal-overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.65);
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        .modal-overlay.open { display: flex; }
-        .modal {
-            width: min(480px, 95vw);
-            background: var(--card-bg);
-            border: 1px solid var(--accent-color);
-            border-radius: 12px;
-            padding: 20px;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-        }
-        .modal h2 { margin-top: 0; text-align: center; }
-        .modal-row { margin-bottom: 12px; }
-        .modal label { display: block; margin-bottom: 6px; color: #cfcfcf; }
-        .modal select {
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid #355;
-            background: #0f1d35;
-            color: #fff;
-        }
-        .modal-actions {
-            display: flex;
-            justify-content: flex-end;
-            gap: 10px;
-            margin-top: 18px;
-        }
-        .modal-actions.modal-actions-space {
-            justify-content: space-between;
-            width: 100%;
-        }
-        .right-actions {
-            display: flex;
-            gap: 10px;
-        }
-        .modal-close {
-            background: transparent;
-            color: #ddd;
-            border: 1px solid #555;
-            border-radius: 8px;
-            padding: 10px 14px;
-            cursor: pointer;
-        }
-        .modal-secondary-btn {
-            background: transparent;
-            color: #fff;
-            border: 1px solid #555;
-            border-radius: 8px;
-            padding: 10px 14px;
-            cursor: pointer;
-            width: 100%;
-            margin-top: 10px;
-        }
-        .floating-toggle-btn {
-            position: fixed;
-            right: 16px;
-            bottom: 16px;
-            padding: 8px 12px;
-            font-size: 0.85em;
-            border-radius: 999px;
-            z-index: 1100;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-        }
-
-        .floating-edit-tracker-btn {
-            position: fixed;
-            top: 16px;
-            right: 16px;
-            z-index: 1100;
-            padding: 8px 12px;
-            font-size: 0.85em;
-            border-radius: 999px;
-            border: 1px solid #345c8f;
-            background: var(--accent-color);
-            color: #fff;
-            cursor: pointer;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-        }
-
-        .floating-users-btn {
-            position: fixed;
-            top: 16px;
-            right: 102px;
-            z-index: 1100;
-            padding: 8px 12px;
-            font-size: 0.85em;
-            border-radius: 999px;
-            border: 1px solid #345c8f;
-            background: var(--accent-color);
-            color: #fff;
-            cursor: pointer;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-        }
-
-        .modal-toggle-search-btn {
-            border-radius: 999px;
-            padding: 8px 12px;
-            font-size: 0.85em;
-            width: auto;
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
-        }
 
         .footer { text-align: center; margin-top: 40px; color: #444; font-size: 0.8em; }
     </style>
@@ -229,11 +105,6 @@
 <div class="status-bar">
     Статус з'єднання: <span id="status-indicator">Connecting...</span>
 </div>
-<div class="toolbar">
-    <button id="open-rent-modal-btn" class="rent-btn">Оренда</button>
-</div>
-<button id="open-edit-tracker-name-modal-btn" class="floating-edit-tracker-btn">Трекери</button>
-<button id="open-users-modal-btn" class="floating-users-btn">Користувачі</button>
 
 <div id="dashboard-container">
     {% for row in data %}
@@ -257,109 +128,12 @@
     Останнє повне оновлення сторінки: {{ now }}
 </div>
 
-<div id="rent-modal-overlay" class="modal-overlay">
-    <div class="modal">
-        <h2>Керування орендою</h2>
-        <div class="modal-row">
-            <label for="rent-user-select">Користувач</label>
-            <select id="rent-user-select"></select>
-        </div>
-        <div class="modal-row">
-            <label for="rent-tracker-select">Трекер</label>
-            <select id="rent-tracker-select"></select>
-        </div>
-        <div id="rent-status-text" class="ts-value">Статус пари: ...</div>
-        <div class="modal-actions">
-            <button id="rent-modal-close-btn" class="modal-close">Закрити</button>
-            <button id="rent-action-btn" class="rent-btn btn-start">Почати оренду</button>
-        </div>
-    </div>
-</div>
-
-<div id="tracker-name-modal-overlay" class="modal-overlay">
-    <div class="modal">
-        <h2>Редагування назви трекера</h2>
-        <div class="modal-row">
-            <label for="tracker-name-select">Трекер</label>
-            <select id="tracker-name-select"></select>
-        </div>
-        <div class="modal-row">
-            <label for="tracker-name-input">Нова назва</label>
-            <input id="tracker-name-input" type="text" style="width:100%; padding:10px; border-radius:8px; border:1px solid #355; background:#0f1d35; color:#fff;" />
-        </div>
-        <div class="modal-row">
-            <label for="tracker-factor-input">Коефіцієнт коректировки</label>
-            <input id="tracker-factor-input" type="number" step="0.01" min="0.01" value="1" style="width:100%; padding:10px; border-radius:8px; border:1px solid #355; background:#0f1d35; color:#fff;" />
-        </div>
-        <div class="modal-actions modal-actions-space">
-            <button id="toggle-search-trackers-btn" class="rent-btn btn-start modal-toggle-search-btn" type="button">Пошук трекерів: ...</button>
-            <div class="right-actions">
-                <button id="tracker-name-modal-close-btn" class="modal-close">Закрити</button>
-                <button id="tracker-name-save-btn" class="rent-btn btn-start" type="button">Зберегти</button>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="users-modal-overlay" class="modal-overlay">
-    <div class="modal">
-        <h2>Керування користувачами</h2>
-        <div class="modal-row">
-            <label for="users-modal-select">Користувач</label>
-            <select id="users-modal-select">
-                <option value="">Новий користувач</option>
-            </select>
-        </div>
-
-        <div class="modal-row">
-            <label for="users-modal-first-name">Ім'я</label>
-            <input id="users-modal-first-name" type="text" style="width:100%; padding:10px; border-radius:8px; border:1px solid #355; background:#0f1d35; color:#fff;" />
-        </div>
-        <div class="modal-row">
-            <label for="users-modal-last-name">Прізвище</label>
-            <input id="users-modal-last-name" type="text" style="width:100%; padding:10px; border-radius:8px; border:1px solid #355; background:#0f1d35; color:#fff;" />
-        </div>
-        <div class="modal-row">
-            <label for="users-modal-middle-name">По батькові</label>
-            <input id="users-modal-middle-name" type="text" style="width:100%; padding:10px; border-radius:8px; border:1px solid #355; background:#0f1d35; color:#fff;" />
-        </div>
-
-        <div class="modal-row">
-            <label for="users-modal-age">Вік</label>
-            <input id="users-modal-age" type="number" style="width:100%; padding:10px; border-radius:8px; border:1px solid #355; background:#0f1d35; color:#fff;" />
-        </div>
-        <div class="modal-row">
-            <label for="users-modal-height">Зріст (см)</label>
-            <input id="users-modal-height" type="number" style="width:100%; padding:10px; border-radius:8px; border:1px solid #355; background:#0f1d35; color:#fff;" />
-        </div>
-        <div class="modal-row">
-            <label for="users-modal-weight">Вага (кг)</label>
-            <input id="users-modal-weight" type="number" style="width:100%; padding:10px; border-radius:8px; border:1px solid #355; background:#0f1d35; color:#fff;" />
-        </div>
-        <div class="modal-row">
-            <label for="users-modal-sex">Стать</label>
-            <select id="users-modal-sex">
-                <option value="male">male</option>
-                <option value="female">female</option>
-            </select>
-        </div>
-
-        <div class="modal-actions">
-            <button id="users-modal-close-btn" class="modal-close">Закрити</button>
-            <button id="users-modal-save-btn" class="rent-btn btn-start" type="button">Зберегти</button>
-        </div>
-    </div>
-</div>
-
 <script>
-    const socketUrl = `ws://${window.location.host}/ws`;
+    const wsScheme = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const socketUrl = `${wsScheme}//${window.location.host}/ws`;
     const trackingTimeoutSec = Number("{{ tracking_timeout_sec | default(3) }}") || 3;
     const trackingTimeoutMs = trackingTimeoutSec * 1000;
     let socket;
-    let rentPairIsActive = false;
-    let rentalDataLoaded = false;
-    let trackersForNameModalCache = [];
-    let usersForUsersModalCache = [];
 
     function connectWebSocket() {
         socket = new WebSocket(socketUrl);
@@ -375,10 +149,6 @@
                 const data = JSON.parse(event.data);
                 if (data.event === 'rental_stopped') {
                     removeDeviceCard(data.device_id);
-                    const rentOverlay = document.getElementById('rent-modal-overlay');
-                    if (rentOverlay && rentOverlay.classList.contains('open')) {
-                        refreshTrackerAvailability().catch((e) => console.error('Помилка оновлення доступності після stop', e));
-                    }
                     return;
                 }
                 updateHeartRateUI(data);
@@ -394,7 +164,7 @@
             setTimeout(connectWebSocket, 3000);
         };
 
-        socket.onerror = function (err) {
+        socket.onerror = function () {
             socket.close();
         };
     }
@@ -443,7 +213,6 @@
         if (!Number.isNaN(parsed)) return parsed;
         const numeric = Number(tsValue);
         if (Number.isFinite(numeric) && numeric > 0) {
-            // Якщо приходить unix-час у секундах, переведемо у мс.
             return numeric < 1e12 ? numeric * 1000 : numeric;
         }
         return null;
@@ -501,401 +270,8 @@
         });
     }
 
-    async function fetchJson(url, options = {}) {
-        const response = await fetch(url, options);
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
-        return response.json();
-    }
-
-    async function refreshSearchTrackersButtonState() {
-        const btn = document.getElementById('toggle-search-trackers-btn');
-        const data = await fetchJson('/dashboard/settings/search-new-trackers');
-        if (data.enabled) {
-            btn.textContent = 'Пошук трекерів: УВІМК';
-            btn.classList.remove('btn-stop');
-            btn.classList.add('btn-start');
-        } else {
-            btn.textContent = 'Пошук трекерів: ВИМК';
-            btn.classList.remove('btn-start');
-            btn.classList.add('btn-stop');
-        }
-    }
-
-    async function toggleSearchTrackersMode() {
-        await fetchJson('/dashboard/settings/search-new-trackers/toggle', { method: 'POST' });
-        await refreshSearchTrackersButtonState();
-    }
-
-    async function loadRentalOptions() {
-        const users = await fetchJson('/dashboard/users');
-        const trackers = await fetchJson('/dashboard/trackers');
-
-        const userSelect = document.getElementById('rent-user-select');
-        const trackerSelect = document.getElementById('rent-tracker-select');
-
-        userSelect.innerHTML = users
-            .map((u) => `<option value="${u.id}">${u.last_name} ${u.first_name} (ID: ${u.id})</option>`)
-            .join('');
-
-        trackerSelect.innerHTML = trackers
-            .map((t) => `<option value="${t.device_id}">${t.name} (ID: ${t.device_id})</option>`)
-            .join('');
-    }
-
-    function setRentActionButtonState(isActive) {
-        const btn = document.getElementById('rent-action-btn');
-        const status = document.getElementById('rent-status-text');
-        rentPairIsActive = isActive;
-        if (isActive) {
-            btn.textContent = 'Завершити оренду';
-            btn.classList.remove('btn-start');
-            btn.classList.add('btn-stop');
-            status.textContent = 'Статус пари: Оренда активна';
-        } else {
-            btn.textContent = 'Почати оренду';
-            btn.classList.remove('btn-stop');
-            btn.classList.add('btn-start');
-            status.textContent = 'Статус пари: Оренда неактивна';
-        }
-    }
-
-    async function refreshPairRentalStatus() {
-        const userSelect = document.getElementById('rent-user-select');
-        const trackerSelect = document.getElementById('rent-tracker-select');
-        const customerId = Number(userSelect.value);
-        const deviceId = Number(trackerSelect.value);
-        if (!customerId || !deviceId) {
-            setRentActionButtonState(false);
-            return;
-        }
-        const status = await fetchJson(`/dashboard/rentals/status?customer_id=${customerId}&device_id=${deviceId}`);
-        setRentActionButtonState(Boolean(status.active));
-    }
-
-    async function refreshTrackerAvailability() {
-        const userSelect = document.getElementById('rent-user-select');
-        const trackerSelect = document.getElementById('rent-tracker-select');
-        const customerId = Number(userSelect.value);
-        const deviceId = Number(trackerSelect.value);
-
-        if (!deviceId) {
-            // fallback: no tracker selected
-            Array.from(userSelect.options).forEach((opt) => { opt.disabled = false; });
-            await refreshPairRentalStatus();
-            return;
-        }
-
-        const active = await fetchJson(`/dashboard/rentals/active-customer?device_id=${deviceId}`);
-        const activeCustomerId = active.active_customer_id;
-
-        if (activeCustomerId === null) {
-            Array.from(userSelect.options).forEach((opt) => { opt.disabled = false; });
-            await refreshPairRentalStatus();
-            return;
-        }
-
-        const activeIdNum = Number(activeCustomerId);
-
-        // Трекер зайнятий: залишаємо вибір тільки орендатора.
-        Array.from(userSelect.options).forEach((opt) => {
-            const optId = Number(opt.value);
-            opt.disabled = optId !== activeIdNum;
-        });
-
-        // Якщо зараз обрано не того користувача — перемкнемо.
-        if (customerId !== activeIdNum) {
-            userSelect.value = String(activeIdNum);
-        }
-
-        await refreshPairRentalStatus();
-    }
-
-    async function loadTrackersForNameModal() {
-        const trackers = await fetchJson('/dashboard/trackers');
-        trackersForNameModalCache = trackers;
-        const trackerSelect = document.getElementById('tracker-name-select');
-        trackerSelect.innerHTML = trackers
-            .map((t) => `<option value="${t.device_id}">${t.name} (ID: ${t.device_id})</option>`)
-            .join('');
-
-        // Якщо є хоча б один трекер — встановимо назву в інпут.
-        if (trackers.length > 0) {
-            const first = trackers[0];
-            trackerSelect.value = String(first.device_id);
-            syncTrackerNameInputFromSelect();
-        }
-    }
-
-    function syncTrackerNameInputFromSelect() {
-        const trackerSelect = document.getElementById('tracker-name-select');
-        const deviceId = Number(trackerSelect.value);
-        const current = trackersForNameModalCache.find((t) => Number(t.device_id) === deviceId);
-        const input = document.getElementById('tracker-name-input');
-        const factorInput = document.getElementById('tracker-factor-input');
-        input.value = current && current.name ? current.name : '';
-        factorInput.value = current && current.correction_factor ? String(current.correction_factor) : '1';
-    }
-
-    function closeTrackerNameModal() {
-        document.getElementById('tracker-name-modal-overlay').classList.remove('open');
-    }
-
-    function toggleTrackerNameModal() {
-        const overlay = document.getElementById('tracker-name-modal-overlay');
-        if (overlay.classList.contains('open')) {
-            closeTrackerNameModal();
-            return;
-        }
-        openTrackerNameModal().catch((e) => console.error('Не вдалося відкрити модалку редагування трекера', e));
-    }
-
-    async function openTrackerNameModal() {
-        const overlay = document.getElementById('tracker-name-modal-overlay');
-        overlay.classList.add('open');
-        await refreshSearchTrackersButtonState();
-        await loadTrackersForNameModal();
-    }
-
-    async function saveTrackerNameFromModal() {
-        const trackerSelect = document.getElementById('tracker-name-select');
-        const deviceId = Number(trackerSelect.value);
-        const newNameRaw = document.getElementById('tracker-name-input').value;
-        const trimmed = String(newNameRaw || '').trim();
-        const factorRaw = document.getElementById('tracker-factor-input').value;
-        const correctionFactor = Number(factorRaw);
-
-        if (!deviceId) return;
-        if (!trimmed) {
-            alert('Назва не може бути порожньою.');
-            return;
-        }
-        if (!Number.isFinite(correctionFactor) || correctionFactor <= 0) {
-            alert('Коефіцієнт має бути числом більше 0.');
-            return;
-        }
-
-        await fetchJson(`/dashboard/trackers/${deviceId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: trimmed, correction_factor: correctionFactor })
-        });
-
-        // Оновимо списки в UI (орендні селектори теж залежать від trackers).
-        await loadRentalOptions();
-        await loadTrackersForNameModal();
-        closeTrackerNameModal();
-    }
-
-    async function loadUsersForUsersModal() {
-        const users = await fetchJson('/dashboard/users/full');
-        usersForUsersModalCache = users;
-
-        const select = document.getElementById('users-modal-select');
-        const currentValue = select.value;
-
-        select.innerHTML = '<option value="">Новий користувач</option>' + users
-            .map((u) => `<option value="${u.id}">${u.last_name} ${u.first_name} (ID: ${u.id})</option>`)
-            .join('');
-
-        if (currentValue && users.some((u) => String(u.id) === String(currentValue))) {
-            select.value = currentValue;
-        } else {
-            select.value = '';
-        }
-
-        syncUserFormFromSelection();
-    }
-
-    function resetUsersForm() {
-        document.getElementById('users-modal-first-name').value = '';
-        document.getElementById('users-modal-last-name').value = '';
-        document.getElementById('users-modal-middle-name').value = '';
-        document.getElementById('users-modal-age').value = '';
-        document.getElementById('users-modal-height').value = '';
-        document.getElementById('users-modal-weight').value = '';
-        document.getElementById('users-modal-sex').value = 'male';
-    }
-
-    function syncUserFormFromSelection() {
-        const select = document.getElementById('users-modal-select');
-        const userId = select.value;
-        if (!userId) {
-            resetUsersForm();
-            return;
-        }
-
-        const user = usersForUsersModalCache.find((u) => String(u.id) === String(userId));
-        if (!user) {
-            resetUsersForm();
-            return;
-        }
-
-        document.getElementById('users-modal-first-name').value = user.first_name || '';
-        document.getElementById('users-modal-last-name').value = user.last_name || '';
-        document.getElementById('users-modal-middle-name').value = user.middle_name || '';
-        document.getElementById('users-modal-age').value = user.age ?? '';
-        document.getElementById('users-modal-height').value = user.height ?? '';
-        document.getElementById('users-modal-weight').value = user.weight ?? '';
-        document.getElementById('users-modal-sex').value = user.sex || 'male';
-    }
-
-    function closeUsersModal() {
-        document.getElementById('users-modal-overlay').classList.remove('open');
-    }
-
-    function toggleUsersModal() {
-        const overlay = document.getElementById('users-modal-overlay');
-        if (overlay.classList.contains('open')) {
-            closeUsersModal();
-            return;
-        }
-        openUsersModal().catch((e) => console.error('Не вдалося відкрити модалку користувачів', e));
-    }
-
-    async function openUsersModal() {
-        const overlay = document.getElementById('users-modal-overlay');
-        overlay.classList.add('open');
-        await loadUsersForUsersModal();
-    }
-
-    async function saveUsersFromModal() {
-        const select = document.getElementById('users-modal-select');
-        const userIdRaw = select.value;
-        const userId = userIdRaw ? Number(userIdRaw) : null;
-
-        const firstName = document.getElementById('users-modal-first-name').value.trim();
-        const lastName = document.getElementById('users-modal-last-name').value.trim();
-        const middleNameRaw = document.getElementById('users-modal-middle-name').value.trim();
-        const middleName = middleNameRaw ? middleNameRaw : null;
-
-        const age = parseInt(document.getElementById('users-modal-age').value, 10);
-        const height = parseInt(document.getElementById('users-modal-height').value, 10);
-        const weight = parseInt(document.getElementById('users-modal-weight').value, 10);
-        const sex = document.getElementById('users-modal-sex').value;
-
-        if (!firstName || !lastName || !Number.isFinite(age) || !Number.isFinite(height) || !Number.isFinite(weight) || !sex) {
-            alert('Заповніть обов’язкові поля: ім’я, прізвище, вік, зріст, вага, стать.');
-            return;
-        }
-
-        const payload = {
-            first_name: firstName,
-            last_name: lastName,
-            middle_name: middleName,
-            age: age,
-            height: height,
-            weight: weight,
-            sex: sex
-        };
-
-        if (userId) {
-            await fetchJson(`/dashboard/users/${userId}`, {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-        } else {
-            await fetchJson('/dashboard/users', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
-            });
-        }
-
-        closeUsersModal();
-        await loadRentalOptions();
-    }
-
-    async function onRentActionClick() {
-        const userSelect = document.getElementById('rent-user-select');
-        const trackerSelect = document.getElementById('rent-tracker-select');
-        const customerId = Number(userSelect.value);
-        const deviceId = Number(trackerSelect.value);
-        if (!customerId || !deviceId) return;
-
-        if (rentPairIsActive) {
-            await fetchJson(`/dashboard/rentals/stop?customer_id=${customerId}&device_id=${deviceId}`, { method: 'POST' });
-        } else {
-            await fetchJson('/dashboard/rentals/start', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ customer_id: customerId, device_id: deviceId })
-            });
-        }
-        await refreshTrackerAvailability();
-    }
-
-    async function openRentModal() {
-        const overlay = document.getElementById('rent-modal-overlay');
-        overlay.classList.add('open');
-        if (!rentalDataLoaded) {
-            await loadRentalOptions();
-            rentalDataLoaded = true;
-        }
-        await refreshTrackerAvailability();
-    }
-
-    function closeRentModal() {
-        document.getElementById('rent-modal-overlay').classList.remove('open');
-    }
-
-    function initRentModalHandlers() {
-        document.getElementById('open-rent-modal-btn').addEventListener('click', () => {
-            openRentModal().catch((e) => console.error('Не вдалося відкрити модалку оренди', e));
-        });
-        document.getElementById('rent-modal-close-btn').addEventListener('click', closeRentModal);
-        document.getElementById('rent-action-btn').addEventListener('click', () => {
-            onRentActionClick().catch((e) => console.error('Помилка керування орендою', e));
-        });
-        document.getElementById('rent-user-select').addEventListener('change', () => {
-            refreshTrackerAvailability().catch((e) => console.error('Помилка оновлення доступності трекера', e));
-        });
-        document.getElementById('rent-tracker-select').addEventListener('change', () => {
-            refreshTrackerAvailability().catch((e) => console.error('Помилка оновлення доступності трекера', e));
-        });
-        document.getElementById('rent-modal-overlay').addEventListener('click', (e) => {
-            if (e.target.id === 'rent-modal-overlay') closeRentModal();
-        });
-        document.getElementById('toggle-search-trackers-btn').addEventListener('click', () => {
-            toggleSearchTrackersMode().catch((e) => console.error('Помилка перемикання пошуку трекерів', e));
-        });
-
-        document.getElementById('open-edit-tracker-name-modal-btn').addEventListener('click', () => {
-            toggleTrackerNameModal();
-        });
-        document.getElementById('tracker-name-modal-close-btn').addEventListener('click', closeTrackerNameModal);
-        document.getElementById('tracker-name-save-btn').addEventListener('click', () => {
-            saveTrackerNameFromModal().catch((e) => console.error('Помилка збереження назви трекера', e));
-        });
-        document.getElementById('tracker-name-select').addEventListener('change', () => {
-            syncTrackerNameInputFromSelect();
-        });
-
-        document.getElementById('open-users-modal-btn').addEventListener('click', () => {
-            toggleUsersModal();
-        });
-        document.getElementById('users-modal-close-btn').addEventListener('click', closeUsersModal);
-        document.getElementById('users-modal-save-btn').addEventListener('click', () => {
-            saveUsersFromModal().catch((e) => console.error('Помилка збереження користувача', e));
-        });
-        document.getElementById('users-modal-select').addEventListener('change', () => {
-            syncUserFormFromSelection();
-        });
-        document.getElementById('users-modal-overlay').addEventListener('click', (e) => {
-            if (e.target.id === 'users-modal-overlay') closeUsersModal();
-        });
-
-        document.getElementById('tracker-name-modal-overlay').addEventListener('click', (e) => {
-            if (e.target.id === 'tracker-name-modal-overlay') closeTrackerNameModal();
-        });
-    }
-
     document.addEventListener('DOMContentLoaded', () => {
         bootstrapInitialTrackingState();
-        initRentModalHandlers();
-        refreshSearchTrackersButtonState().catch((e) => console.error('Не вдалося отримати стан пошуку трекерів', e));
         connectWebSocket();
         setInterval(refreshAllTrackingStatuses, 1000);
     });

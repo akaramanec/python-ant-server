@@ -55,6 +55,11 @@ async def read_dashboard(request: Request):
         "tracking_timeout_sec": database.get_tracking_timeout_sec()
     })
 
+
+@app.get("/admin", response_class=HTMLResponse)
+async def admin_page(request: Request):
+    return templates.TemplateResponse("admin.html", {"request": request})
+
 @app.get("/dashboard/users")
 async def dashboard_users():
     rows = database.get_users_for_rental()
