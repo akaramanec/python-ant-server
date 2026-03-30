@@ -406,6 +406,16 @@ def get_trackers_for_rental():
             ORDER BY name
         """).fetchall()
 
+
+def get_active_pairs_count() -> int:
+    with get_db_connection() as conn:
+        row = conn.execute("""
+            SELECT COUNT(*) AS cnt
+            FROM device_rentals
+            WHERE finish_at IS NULL
+        """).fetchone()
+        return int(row["cnt"] if row and row["cnt"] is not None else 0)
+
 def update_tracker_settings(device_id: int, name: str, correction_factor: float) -> bool:
     device_id = int(device_id)
     if name is None:

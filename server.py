@@ -166,6 +166,11 @@ async def dashboard_active_customer(device_id: int):
         return {"active_customer_id": None}
     return {"active_customer_id": active["customer_id"]}
 
+
+@app.get("/dashboard/rentals/active-count")
+async def dashboard_active_pairs_count():
+    return {"active_pairs": database.get_active_pairs_count()}
+
 @app.put("/dashboard/trackers/{device_id}/name")
 async def dashboard_update_tracker_name(device_id: int, payload: models.TrackerNameUpdate):
     success = database.update_tracker_name(device_id, payload.name)

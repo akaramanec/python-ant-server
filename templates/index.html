@@ -26,21 +26,39 @@
 
         h1 { text-align: center; color: #fff; text-transform: uppercase; letter-spacing: 2px; }
 
-        .status-bar { text-align: center; margin-bottom: 20px; font-size: 0.9em; }
+        .status-meta {
+            position: fixed;
+            right: 14px;
+            bottom: 10px;
+            text-align: right;
+            display: flex;
+            align-items: baseline;
+            gap: 12px;
+            z-index: 100;
+        }
+
+        .status-bar {
+            font-size: 0.85em;
+            color: #cfd8dc;
+        }
         #status-indicator { font-weight: bold; }
 
         #dashboard-container {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-            gap: 20px;
-            max-width: 1400px;
-            margin: 0 auto;
+            grid-template-columns: repeat(auto-fit, 220px);
+            gap: 16px;
+            width: 100%;
+            max-width: none;
+            margin: 0;
+            justify-content: start;
         }
 
         .device-card {
             background: var(--card-bg);
-            border-radius: 15px;
-            padding: 20px;
+            border-radius: 11px;
+            padding: 5px;
+            width: 210px;
+            box-sizing: border-box;
             text-align: center;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
             border: 2px solid var(--accent-color);
@@ -69,26 +87,56 @@
 
         .device-id { font-size: 0.75em; color: #888; margin-bottom: 10px; }
 
-        .hr-value {
-            font-size: 3.5em;
-            font-weight: bold;
-            margin: 5px 0;
-            color: var(--text-color);
-            line-height: 1;
+        .vitals-row {
+            display: flex;
+            flex-wrap: nowrap;
+            gap: 14px;
+            justify-content: center;
+            align-items: end;
+            margin: 6px 0 2px;
         }
 
+        .vitals-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            min-height: 82px;
+        }
+
+        .vitals-label {
+            font-size: 0.68em;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: #9fb2c7;
+            margin-bottom: 4px;
+        }
+
+        .hr-value,
+        .kcal-value {
+            display: inline-block;
+            font-size: 2.6em;
+            font-weight: bold;
+            line-height: 1;
+            font-variant-numeric: tabular-nums;
+            text-align: right;
+            white-space: nowrap;
+        }
+        .hr-value { width: 3ch; }
+        .kcal-value { width: 5ch; }
+
+        .hr-value { color: var(--text-color); }
+        .kcal-value { color: var(--warning); }
         .hr-high { color: var(--danger); }
 
         .stats-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+            display: block;
             margin-top: 15px;
             padding-top: 10px;
             border-top: 1px solid var(--accent-color);
             font-size: 0.9em;
         }
 
-        .kcal-box { color: var(--warning); }
         .time-box { color: var(--success); }
 
         .ts-value { font-size: 0.7em; color: #555; margin-top: 10px; }
@@ -96,14 +144,18 @@
         .tracking-offline { color: var(--danger); }
         .tracking-unbound { color: #9e9e9e; }
 
-        .footer { text-align: center; margin-top: 40px; color: #444; font-size: 0.8em; }
+        .footer {
+            color: #6f7d90;
+            font-size: 0.78em;
+        }
     </style>
 </head>
 <body>
 <h1>Дошка активних користувачів</h1>
 
-<div class="status-bar">
-    Статус з'єднання: <span id="status-indicator">Connecting...</span>
+<div class="status-meta">
+    <div class="footer">Останнє повне оновлення сторінки: {{ now }}</div>
+    <div class="status-bar">Статус з'єднання: <span id="status-indicator">Connecting...</span></div>
 </div>
 
 <div id="dashboard-container">
@@ -114,18 +166,22 @@
             <div class="user-last-name">{{ row.last_name }}</div>
         </div>
         <div class="device-id">Sensor ID: {{ row.device_id }}</div>
-        <div class="hr-value {{ 'hr-high' if row.hr > 150 else '' }}">{{ row.hr }}</div>
+        <div class="vitals-row">
+            <div class="vitals-box">
+                <div class="vitals-label">Пульс</div>
+                <div class="hr-value {{ 'hr-high' if row.hr > 150 else '' }}">{{ row.hr }}</div>
+            </div>
+            <div class="vitals-box">
+                <div class="vitals-label">Ккал</div>
+                <div class="kcal-value">{{ row.calories }}</div>
+            </div>
+        </div>
         <div class="stats-grid">
-            <div class="kcal-box">🔥 {{ row.calories }} <small>kcal</small></div>
             <div class="time-box">⏱️ {{ row.fitness_time }}</div>
         </div>
         <div class="ts-value tracking-status">Статус: Незв'язаний</div>
     </div>
     {% endfor %}
-</div>
-
-<div class="footer">
-    Останнє повне оновлення сторінки: {{ now }}
 </div>
 
 <script>
@@ -188,9 +244,17 @@
                 <div class="user-last-name">${data.last_name}</div>
             </div>
             <div class="device-id">Sensor ID: ${data.device_id}</div>
-            <div class="hr-value ${data.hr > 150 ? 'hr-high' : ''}">${data.hr}</div>
+            <div class="vitals-row">
+                <div class="vitals-box">
+                    <div class="vitals-label">Пульс</div>
+                    <div class="hr-value ${data.hr > 150 ? 'hr-high' : ''}">${data.hr}</div>
+                </div>
+                <div class="vitals-box">
+                    <div class="vitals-label">Ккал</div>
+                    <div class="kcal-value">${data.calories}</div>
+                </div>
+            </div>
             <div class="stats-grid">
-                <div class="kcal-box">🔥 ${data.calories} <small>kcal</small></div>
                 <div class="time-box">⏱️ ${data.fitness_time}</div>
             </div>
             <div class="ts-value tracking-status">Статус: На зв'язку</div>
