@@ -1,0 +1,263 @@
+@font-face {
+    font-family: 'TacticSans-Bld';
+    src: url('/static/fonts/TacticSans-Bld.otf') format('opentype');
+    font-style: normal;
+    font-weight: 700;
+}
+@font-face {
+    font-family: 'TacticSansExd-Bld';
+    src: url('/static/fonts/TacticSansExd-Bld.otf') format('opentype');
+    font-style: normal;
+    font-weight: 700;
+}
+@font-face {
+    font-family: 'TacticSansExd-Reg';
+    src: url('/static/fonts/TacticSansExd-Reg.otf') format('opentype');
+    font-style: normal;
+    font-weight: 400;
+}
+
+body {
+    font-family: 'TacticSansExd-Reg', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: url('/static/images/bg.png') center/cover no-repeat fixed;
+    color: #fff;
+    margin: 0;
+    padding: 0;
+    min-height: 100vh;
+}
+
+html,
+body {
+    height: 100%;
+    overflow: hidden;
+}
+
+.board-title-text {
+    position: fixed;
+    left: 150px;
+    top: 30px;
+    width: 1478px;
+    height: 62px;
+    z-index: 372;
+
+    font-family: 'TacticSans-Bld', sans-serif;
+    font-size: 46px;
+    font-weight: 700;
+    color: rgb(192, 192, 192);
+    text-transform: uppercase;
+    line-height: 1.405;
+    text-align: left;
+
+    transform: scaleX(1.64141448738284);
+    transform-origin: left top;
+    white-space: nowrap;
+    pointer-events: none;
+    user-select: none;
+}
+
+.cards-grid {
+    position: fixed;
+    left: 50%;
+    transform: translateX(-50%);
+    top: 3.3cm;
+    display: grid;
+    /* primusovo 5 kartok v ryad */
+    grid-template-columns: repeat(5, 9.1cm);
+    gap: 0.5cm;
+    z-index: 6;
+    /* shyryna pid 5 kartok + 4 promizhky */
+    width: 47.5cm;
+    justify-content: start;
+    grid-auto-flow: row;
+}
+
+/* Dlya velykoyi kilkosti kartok (>20): 6 v ryad */
+.cards-grid.cards-many {
+    grid-template-columns: repeat(6, 7.7cm);
+    gap: 0.26cm;
+    width: 47.5cm;
+}
+
+.cards-grid.cards-many .device_card {
+    width: 7.7cm;
+    height: 3.8cm;
+    border-radius: 0.46cm;
+    padding-top: 0.32cm;
+}
+
+.cards-grid.cards-many .device_last_name {
+    font-size: 17px;
+}
+
+.cards-grid.cards-many .device_name_zone {
+    left: 0.18cm;
+    top: 0.2cm;
+    width: calc(100% - 0.36cm);
+    height: 0.95cm;
+    border-radius: 0.3cm;
+}
+
+.cards-grid.cards-many .device_metrics_row {
+    left: 0.18cm;
+    right: 0.18cm;
+    top: 1.52cm;
+}
+
+.cards-grid.cards-many .metric_block {
+    height: 1.05cm;
+    border-radius: 0.28cm;
+}
+
+.cards-grid.cards-many .metric_icon {
+    width: 35px;
+    height: 38px;
+}
+
+.cards-grid.cards-many .metric_value.hr {
+    font-size: 28px;
+}
+
+.cards-grid.cards-many .metric_value.kcal {
+    font-size: 28px;
+}
+
+.cards-grid.cards-many .device_time {
+    top: 114px;
+    line-height: 1.5;
+}
+
+.device_card {
+    border-radius: 0.535cm;
+    background-color: rgb(52, 52, 52);
+    width: 9.1cm;
+    height: 4.48cm;
+    z-index: 6;
+    position: relative;
+    overflow: hidden;
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 0.42cm;
+}
+
+.device_name_zone {
+    border-radius: 0.388cm;
+    background-color: rgb(38, 38, 38);
+    position: absolute;
+    left: 0.238cm;
+    top: 0.264cm;
+    width: calc(100% - 0.476cm);
+    height: 1.244cm;
+    z-index: 13;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.device_last_name {
+    font-family: 'TacticSansExd-Bld', 'TacticSans-Bld', sans-serif;
+    font-weight: 700;
+    color: #ffffff;
+    font-size: 20px;
+    text-align: center;
+    white-space: nowrap;
+    padding: 0 0.2cm;
+}
+
+.device_metrics_row {
+    position: absolute;
+    left: 0.238cm;
+    right: 0.238cm;
+    top: 1.72cm;
+    z-index: 12;
+    display: flex;
+    align-items: stretch;
+    padding: inherit;
+}
+
+.metric_block {
+    background-color: transparent;
+    border-radius: 0;
+    height: 1.3cm;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+.metric_block.kcal_block {
+    flex: 1 1 auto;
+}
+
+.metric_icon {
+    display: block;
+    user-select: none;
+    pointer-events: none;
+    width: 40px;
+    height: 43px;
+}
+
+.metric_value {
+    font-family: 'TacticSansExd-Bld', 'TacticSans-Bld', sans-serif;
+    font-weight: 700;
+    color: rgb(192, 192, 192);
+    line-height: 1;
+    text-align: right;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    display: inline-block;
+}
+
+.metric_value.hr {
+    font-size: 34px;
+    min-width: 3ch;
+}
+
+.metric_value.kcal {
+    font-size: 34px;
+    min-width: 5ch;
+}
+
+.device_time {
+    font-size: 24px;
+    font-family: "TacticSansExd-Reg", sans-serif;
+    color: rgb(95, 164, 82);
+    text-transform: uppercase;
+    line-height: 1.083;
+    text-align: center;
+    position: absolute;
+    top: 144px;
+    height: 20px;
+    white-space: nowrap;
+}
+
+.status-meta {
+    position: fixed;
+    right: 22px;
+    bottom: 14px;
+    z-index: 500;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    white-space: nowrap;
+    font-family: 'TacticSansExd-Reg', sans-serif;
+    font-size: 12px;
+    line-height: 1;
+    user-select: none;
+}
+
+.status-meta .last-refresh-text {
+    color: rgba(192, 192, 192, 0.95);
+}
+
+.status-meta .connection-status {
+    font-family: 'TacticSansExd-Bld', 'TacticSans-Bld', sans-serif;
+}
+
+.status-meta .connection-status.live {
+    color: rgb(95, 164, 82);
+}
+
+.status-meta .connection-status.offline {
+    color: rgb(219, 68, 68);
+}

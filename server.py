@@ -1,5 +1,6 @@
 import base64
 import secrets
+import os
 from typing import Optional
 
 from fastapi import FastAPI, Request, HTTPException, Depends, WebSocket, WebSocketDisconnect, Query
@@ -7,6 +8,7 @@ from fastapi.responses import HTMLResponse, Response
 from fastapi.templating import Jinja2Templates
 from fastapi.security.api_key import APIKeyHeader
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from datetime import datetime
 from collections import defaultdict
 import uvicorn
@@ -26,6 +28,10 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+static_dir = os.path.join(BASE_DIR, "static")
+app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
 
 def _admin_basic_unauthorized():
@@ -83,6 +89,7 @@ calories_tracker = defaultdict(float)
 last_update_time = {}
 
 database.init_db()
+
 
 async def verify_api_key(header_value: str = Depends(api_key_header)):
     if header_value != config.API_KEY:
@@ -284,6 +291,7 @@ async def log_heart_rate(request: Request, api_key: str = Depends(verify_api_key
     try:
         data = await request.json()
         d_id, hr, ts = data['d_id'], data['hr'], data['ts']
+        d_id = int(d_id)
 
         if database.is_search_new_trackers_enabled():
             database.add_tracker_if_missing(d_id)
@@ -296,7 +304,8 @@ async def log_heart_rate(request: Request, api_key: str = Depends(verify_api_key
             correction_factor = database.get_tracker_correction_factor(d_id)
             hr_corrected = int(round(float(hr) * correction_factor))
 
-            if d_id not in calories_tracker or calories_tracker[d_id] == 0:
+            # Лише перший раз підтягуємо з БД; перевірка == 0 знімала накопичення й разом з round() тримала ккал на 0
+            if d_id not in calories_tracker:
                 calories_tracker[d_id] = float(user['calories'] or 0.0)
 
             now = datetime.now()
@@ -305,11 +314,15 @@ async def log_heart_rate(request: Request, api_key: str = Depends(verify_api_key
 
             if d_id in last_update_time:
                 delta = (now - last_update_time[d_id]).total_seconds()
-                if 0 < delta < 10:
-                    # ПЕРЕДАЄМО SEX
-                    kcal_gain = utils.calculate_calories(hr, user['age'], user['weight'], user['sex'], delta)
+                # Раніше було 0 < delta < 10: тоді рідкі пакети (>10 с) майже не давали ккал порівняно з частими.
+                # Рахуємо за повним інтервалом; довгі паузи (офлайн) обрізаємо, щоб один пакет не «донарахував» хвилини.
+                if 0 < delta <= 120:
+                    effective_delta = min(delta, 30.0)
+                    kcal_gain = utils.calculate_calories(
+                        hr_corrected, user['age'], user['weight'], user['sex'], effective_delta
+                    )
                     calories_tracker[d_id] += kcal_gain
-                    database.update_rental_calories(d_id, round(calories_tracker[d_id], 2))
+                    database.update_rental_calories(d_id, round(calories_tracker[d_id], 1))
 
             last_update_time[d_id] = now
 
