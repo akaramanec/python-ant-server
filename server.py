@@ -107,7 +107,19 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/", response_class=HTMLResponse)
 async def read_dashboard(request: Request):
-    rows = database.get_dashboard_data()
+    rows = list(database.get_dashboard_data())
+
+    test_count_raw = request.query_params.get("test_count")
+    if test_count_raw:
+        try:
+            test_count = int(test_count_raw)
+        except (TypeError, ValueError):
+            test_count = None
+
+        if test_count and test_count > 0 and rows:
+            source = [dict(row) for row in rows]
+            rows = [dict(source[i % len(source)]) for i in range(test_count)]
+
     return templates.TemplateResponse("index.html", {
         "request": request,
         "data": rows,
