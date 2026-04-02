@@ -1,2 +1,18 @@
 .env
 heart_data.db
+
+# Python cache/compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+.venv/
+venv/
+env/
+
+# IDE/system temp files
+.idea/
+.vscode/
+*.tmp
+*.temp
