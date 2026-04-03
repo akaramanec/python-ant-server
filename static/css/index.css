@@ -37,18 +37,19 @@ body {
 
 .board-title-text {
     font-family: 'TacticSans-Bld', sans-serif;
-    font-size: 46px;
+    font-size: 50px;
     font-weight: 700;
     color: rgb(192, 192, 192);
     text-transform: uppercase;
     line-height: 1.405;
     text-align: center;
+    margin-top: 20px;
+    margin-bottom: 30px;
 }
 
 .cards-grid {
     display: grid;
     grid-gap: 10px;
-    /*grid-template-columns: 344px 344px 344px 344px 344px;*/
     grid-template-columns: repeat(5, 344px);
     justify-content: center;
     align-content: space-around;
@@ -56,16 +57,15 @@ body {
 
 /* Dlya velykoyi kilkosti kartok (>20): 6 v ryad */
 .cards-grid.cards-many {
-    grid-template-columns: repeat(6, 7.7cm);
-    gap: 0.26cm;
-    width: 47.5cm;
+    grid-template-columns: repeat(6, 290px);
+    gap: 10px;
 }
 
 .cards-grid.cards-many .device_card {
-    width: 7.7cm;
-    height: 3.8cm;
-    border-radius: 0.46cm;
-    padding-top: 0.32cm;
+    width: 290px;
+    height: 144px;
+    border-radius: 18px;
+    padding-top: 12px;
 }
 
 .cards-grid.cards-many .device_last_name {
@@ -73,22 +73,21 @@ body {
 }
 
 .cards-grid.cards-many .device_name_zone {
-    left: 0.18cm;
-    top: 0.2cm;
-    width: calc(100% - 0.36cm);
-    height: 0.95cm;
-    border-radius: 0.3cm;
+    left: 7px;
+    top: 10px;
+    width: calc(100% - 14px);
+    height: 36px;
+    border-radius: 12px;
 }
 
 .cards-grid.cards-many .device_metrics_row {
-    left: 0.18cm;
-    right: 0.18cm;
-    top: 1.52cm;
+    left: 7px;
+    right: 7px;
+    top: 58px;
 }
 
 .cards-grid.cards-many .metric_block {
-    height: 1.05cm;
-    border-radius: 0.28cm;
+    height: 40px;
 }
 
 .cards-grid.cards-many .metric_icon {
@@ -124,14 +123,13 @@ body {
 }
 
 .device_name_zone {
-    border-radius: 0.388cm;
+    border-radius: 15px;
     background-color: rgb(38, 38, 38);
     position: absolute;
-    left: 0.238cm;
-    top: 0.264cm;
-    width: calc(100% - 0.476cm);
-    height: 1.244cm;
-    z-index: 13;
+    left: 9px;
+    top: 12px;
+    width: calc(100% - 18px);
+    height: 47px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -144,32 +142,27 @@ body {
     font-size: 20px;
     text-align: center;
     white-space: nowrap;
-    padding: 0 0.2cm;
 }
 
 .device_metrics_row {
     position: absolute;
-    left: 0.238cm;
-    right: 0.238cm;
-    top: 1.72cm;
-    z-index: 12;
+    left: 9px;
+    right: 9px;
+    top: 65px;
     display: flex;
     align-items: stretch;
     padding: inherit;
+    justify-content: space-around;
 }
 
 .metric_block {
     background-color: transparent;
     border-radius: 0;
-    height: 1.3cm;
+    height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
     box-sizing: border-box;
-}
-
-.metric_block.kcal_block {
-    flex: 1 1 auto;
 }
 
 .metric_icon {
@@ -193,12 +186,12 @@ body {
 
 .metric_value.hr {
     font-size: 34px;
-    min-width: 3ch;
+    /*min-width: 3ch;*/
 }
 
 .metric_value.kcal {
     font-size: 34px;
-    min-width: 5ch;
+    /*min-width: 5ch;*/
 }
 
 .device_time {
