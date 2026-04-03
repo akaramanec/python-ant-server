@@ -1,0 +1,449 @@
+@font-face {
+    font-family: 'TacticSans-Bld';
+    src: url('/static/fonts/TacticSans-Bld.otf') format('opentype');
+    font-style: normal;
+    font-weight: 700;
+}
+@font-face {
+    font-family: 'TacticSansExd-Bld';
+    src: url('/static/fonts/TacticSansExd-Bld.otf') format('opentype');
+    font-style: normal;
+    font-weight: 700;
+}
+@font-face {
+    font-family: 'TacticSansExd-Reg';
+    src: url('/static/fonts/TacticSansExd-Reg.otf') format('opentype');
+    font-style: normal;
+    font-weight: 400;
+}
+:root {
+    --bg-color: #0e0f10;
+    --card-bg: rgba(20, 24, 28, 0.88);
+    --text-color: #c0c0c0;
+    --accent-color: #2a374a;
+    --success: #5fa452;
+    --warning: #ff9800;
+    --danger: #db4444;
+    --input-bg: rgba(15, 20, 28, 0.95);
+    --input-border: #35506f;
+}
+
+body {
+    font-family: 'TacticSansExd-Reg', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: url('/static/images/bg-text.png') var(--bg-color) center/cover no-repeat fixed;
+    color: #fff;
+    margin: 0;
+    padding: 20px;
+}
+button,
+input,
+select,
+textarea {
+    font-family: 'TacticSansExd-Reg', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+h1 {
+    text-align: center;
+    color: var(--text-color);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    font-family: 'TacticSans-Bld', sans-serif;
+    font-weight: 700;
+}
+
+.toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+.rent-btn {
+    background: var(--accent-color);
+    color: #fff;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-size: 0.95em;
+    font-family: 'TacticSansExd-Reg', sans-serif;
+}
+.rent-btn:hover { opacity: 0.9; }
+.active-pairs-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: #cfd8dc;
+    font-size: 0.92em;
+    white-space: nowrap;
+}
+.active-pairs-chip .num {
+    font-weight: 700;
+    color: #fff;
+    min-width: 2ch;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.btn-start { background: var(--success); border-color: #2e7d32; }
+.btn-stop { background: var(--danger); border-color: #b71c1c; }
+
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+    width: min(480px, 95vw);
+    background: var(--card-bg);
+    border: 1px solid var(--accent-color);
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+}
+.modal h2 { margin-top: 0; text-align: center; }
+.modal-row { margin-bottom: 12px; }
+.modal label { display: block; margin-bottom: 6px; color: #cfcfcf; }
+.modal select {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: #fff;
+}
+.modal input[type="text"],
+.modal input[type="number"] {
+    width: 100%;
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: #fff;
+    box-sizing: border-box;
+}
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 18px;
+}
+.modal-actions.modal-actions-space {
+    justify-content: space-between;
+    width: 100%;
+}
+.right-actions {
+    display: flex;
+    gap: 10px;
+}
+.modal-close {
+    background: transparent;
+    color: #ddd;
+    border: 1px solid #555;
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+}
+.floating-toggle-btn {
+    position: fixed;
+    right: 16px;
+    bottom: 16px;
+    padding: 8px 12px;
+    font-size: 0.85em;
+    border-radius: 999px;
+    z-index: 1100;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.floating-edit-tracker-btn {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 1100;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.floating-users-btn {
+    position: fixed;
+    top: 16px;
+    right: 150px;
+    z-index: 1100;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.modal-toggle-search-btn {
+    border-radius: 999px;
+    padding: 8px 12px;
+    font-size: 0.85em;
+    width: auto;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.35);
+}
+
+.ts-value { font-size: 0.7em; color: #555; margin-top: 10px; }
+
+.history-block {
+    max-width: 1200px;
+    margin: 28px auto 48px;
+    padding: 0 12px;
+}
+.history-heading {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: #cfd8dc;
+    margin: 0 0 8px;
+    text-align: center;
+}
+.history-hint {
+    font-size: 0.8rem;
+    color: #78909c;
+    line-height: 1.45;
+    max-width: 720px;
+    margin: 0 auto 18px;
+    text-align: center;
+}
+.history-filters {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+.history-filters > .hist-field {
+    flex: 1 1 200px;
+    min-width: min(100%, 180px);
+    max-width: 100%;
+}
+.history-filters > .hist-field-buttons {
+    flex: 0 0 auto;
+    min-width: 0;
+}
+.hist-field label {
+    display: block;
+    font-size: 0.8rem;
+    color: #9e9e9e;
+    margin-bottom: 4px;
+}
+.hist-field input[type="search"],
+.hist-field input[type="text"],
+.hist-field input[type="date"],
+.hist-field select {
+    width: 100%;
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: #fff;
+    box-sizing: border-box;
+}
+.hist-date-wrap {
+    position: relative;
+}
+.hist-date-wrap input[type="date"] {
+    padding-right: 36px;
+}
+.hist-date-btn {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: #8ab4f8;
+    cursor: pointer;
+    font-size: 1rem;
+    line-height: 1;
+    padding: 2px 4px;
+}
+.hist-date-btn:hover {
+    color: #c6ddff;
+}
+.hist-field select {
+    margin-top: 6px;
+}
+.hist-combobox {
+    position: relative;
+}
+.hist-combobox-input {
+    padding-right: 34px !important;
+}
+.hist-combobox-toggle {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    border: none;
+    background: transparent;
+    color: #8ab4f8;
+    cursor: pointer;
+    font-size: 0.9rem;
+    line-height: 1;
+    padding: 2px 4px;
+}
+.hist-combobox-menu {
+    position: absolute;
+    left: 0;
+    right: 0;
+    top: calc(100% + 4px);
+    background: #111823;
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    box-shadow: 0 10px 24px rgba(0, 0, 0, 0.45);
+    max-height: 260px;
+    overflow: auto;
+    z-index: 40;
+}
+.hist-combobox-menu[hidden] {
+    display: none;
+}
+.hist-combobox-option {
+    width: 100%;
+    text-align: left;
+    border: none;
+    background: transparent;
+    color: #fff;
+    padding: 8px 10px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    line-height: 1.2;
+}
+.hist-combobox-option:hover,
+.hist-combobox-option:focus-visible {
+    background: #1b2a43;
+    outline: none;
+}
+.hist-combobox-option-all {
+    color: #b0bec5;
+    border-bottom: 1px solid #2a3f5f;
+}
+.hist-field-buttons .hist-buttons-row {
+    display: flex;
+    flex-wrap: nowrap;
+    gap: 2px;
+    align-items: center;
+    margin-top: 6px;
+}
+.hist-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    border-radius: 8px;
+    border: 1px solid var(--input-border);
+    background: var(--input-bg);
+    color: #cfd8dc;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+.hist-icon-btn:hover {
+    background: #1a2d4d;
+    color: #fff;
+}
+.hist-icon-btn-primary {
+    background: var(--success);
+    border-color: #2e7d32;
+    color: #fff;
+}
+.hist-icon-btn-primary:hover {
+    opacity: 0.92;
+    filter: brightness(1.05);
+}
+.hist-icon-btn svg {
+    display: block;
+}
+.history-table-wrap {
+    overflow: auto;
+    max-height: min(70vh, 560px);
+    border: 1px solid var(--accent-color);
+    border-radius: 10px;
+    background: rgba(14, 18, 22, 0.62);
+    scrollbar-width: thin;
+    scrollbar-color: #345c8f #0f1d35;
+}
+.history-table-wrap::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+}
+.history-table-wrap::-webkit-scrollbar-track {
+    background: #0f1d35;
+    border-radius: 8px;
+}
+.history-table-wrap::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #3d5a80, #2a4a6e);
+    border-radius: 8px;
+    border: 2px solid #0f1d35;
+}
+.history-table-wrap::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #4a6fa8, #345c8f);
+}
+.history-table-wrap::-webkit-scrollbar-corner {
+    background: #0f1d35;
+}
+.history-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.88rem;
+}
+.history-table th,
+.history-table td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid #2a3f5f;
+}
+.history-table th {
+    position: sticky;
+    top: 0;
+    background: #1b222c;
+    z-index: 1;
+    color: #b0bec5;
+    font-weight: 600;
+}
+.history-table th.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+.history-table th.sortable:hover {
+    background: #1a2847;
+}
+.history-table th.sortable .sort-arrow {
+    display: inline-block;
+    margin-left: 6px;
+    font-size: 0.65em;
+    vertical-align: middle;
+    color: #8ab4f8;
+    min-width: 0.9em;
+}
+.history-table th.sortable:not(.sorted) .sort-arrow::before {
+    content: '▲▼';
+    letter-spacing: -3px;
+    opacity: 0.28;
+    font-size: 0.85em;
+}
+.history-table th.sortable.sorted.asc .sort-arrow::before {
+    content: '▲';
+    opacity: 1;
+}
+.history-table th.sortable.sorted.desc .sort-arrow::before {
+    content: '▼';
+    opacity: 1;
+}
+.history-table tbody tr:hover {
+    background: rgba(63, 85, 115, 0.2);
+}
+.history-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.history-empty {
+    text-align: center;
+    color: #78909c;
+    padding: 24px;
+}
