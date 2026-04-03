@@ -10,7 +10,7 @@
 <body>
     <div class="board-title-text">ДОШКА АКТИВНИХ КОРИСТУВАЧІВ</div>
  
-    <div class="cards-grid{% if data|length > 20 %} cards-many{% endif %}" id="cards-grid">
+    <div class="cards-grid{% if data|length > 30 %} cards-more-than-30{% elif data|length > 20 %} cards-more-than-20{% endif %}" id="cards-grid">
         {% for row in data %}
         <div class="device_card" data-device-id="{{ row.device_id }}"
             data-start-at="{{ row.start_at | default('', true) }}">

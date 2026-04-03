@@ -55,24 +55,39 @@ body {
     align-content: space-around;
 }
 
-/* Dlya velykoyi kilkosti kartok (>20): 6 v ryad */
-.cards-grid.cards-many {
+.cards-grid.cards-more-than-20 {
     grid-template-columns: repeat(6, 290px);
     gap: 10px;
 }
 
-.cards-grid.cards-many .device_card {
+.cards-grid.cards-more-than-30 {
+    grid-template-columns: repeat(7, 248px);
+    gap: 9px;
+}
+
+.cards-grid.cards-more-than-20 .device_card {
     width: 290px;
     height: 144px;
     border-radius: 18px;
     padding-top: 12px;
 }
 
-.cards-grid.cards-many .device_last_name {
+.cards-grid.cards-more-than-30 .device_card {
+    width: 248px;
+    height: 118px;
+    border-radius: 16px;
+    padding-top: 10px;
+}
+
+.cards-grid.cards-more-than-20 .device_last_name {
     font-size: 17px;
 }
 
-.cards-grid.cards-many .device_name_zone {
+.cards-grid.cards-more-than-30 .device_last_name {
+    font-size: 15px;
+}
+
+.cards-grid.cards-more-than-20 .device_name_zone {
     left: 7px;
     top: 10px;
     width: calc(100% - 14px);
@@ -80,32 +95,69 @@ body {
     border-radius: 12px;
 }
 
-.cards-grid.cards-many .device_metrics_row {
+.cards-grid.cards-more-than-30 .device_name_zone {
+    left: 6px;
+    top: 9px;
+    width: calc(100% - 12px);
+    height: 33px;
+    border-radius: 10px;
+}
+
+.cards-grid.cards-more-than-20 .device_metrics_row {
     left: 7px;
     right: 7px;
     top: 58px;
 }
 
-.cards-grid.cards-many .metric_block {
+.cards-grid.cards-more-than-30 .device_metrics_row {
+    left: 6px;
+    right: 6px;
+    top: 48px;
+}
+
+.cards-grid.cards-more-than-20 .metric_block {
     height: 40px;
 }
 
-.cards-grid.cards-many .metric_icon {
+.cards-grid.cards-more-than-30 .metric_block {
+    height: 36px;
+}
+
+.cards-grid.cards-more-than-20 .metric_icon {
     width: 35px;
     height: 38px;
 }
 
-.cards-grid.cards-many .metric_value.hr {
+.cards-grid.cards-more-than-30 .metric_icon {
+    width: 31px;
+    height: 34px;
+}
+
+.cards-grid.cards-more-than-20 .metric_value.hr {
     font-size: 28px;
 }
 
-.cards-grid.cards-many .metric_value.kcal {
+.cards-grid.cards-more-than-30 .metric_value.hr {
+    font-size: 25px;
+}
+
+.cards-grid.cards-more-than-20 .metric_value.kcal {
     font-size: 28px;
 }
 
-.cards-grid.cards-many .device_time {
+.cards-grid.cards-more-than-30 .metric_value.kcal {
+    font-size: 25px;
+}
+
+.cards-grid.cards-more-than-20 .device_time {
     top: 114px;
     line-height: 1.5;
+}
+
+.cards-grid.cards-more-than-30 .device_time {
+    top: 100px;
+    line-height: 1.4;
+    font-size: 21px;
 }
 
 .device_card {

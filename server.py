@@ -107,7 +107,24 @@ async def websocket_endpoint(websocket: WebSocket):
 
 @app.get("/", response_class=HTMLResponse)
 async def read_dashboard(request: Request):
-    rows = list(database.get_dashboard_data())
+    calories_offset_raw = request.query_params.get("calories_offset")
+    heartrate_offset_raw = request.query_params.get("heartrate_offset")
+    try:
+        calories_offset = float(calories_offset_raw) if calories_offset_raw is not None else 0.0
+    except (TypeError, ValueError):
+        calories_offset = 0.0
+    try:
+        heartrate_offset = float(heartrate_offset_raw) if heartrate_offset_raw is not None else 0.0
+    except (TypeError, ValueError):
+        heartrate_offset = 0.0
+
+    rows = []
+    for row in database.get_dashboard_data():
+        item = dict(row)
+        item["calories"] = float(item.get("calories") or 0.0) + calories_offset
+        if item.get("hr") is not None:
+            item["hr"] = int(round(float(item["hr"]) + heartrate_offset))
+        rows.append(item)
 
     test_count_raw = request.query_params.get("test_count")
     if test_count_raw:

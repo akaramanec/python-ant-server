@@ -3,12 +3,28 @@
     const cardsGridEl = document.getElementById('cards-grid');
     const wsProtocol = window.location.protocol === 'https:' ? 'wss' : 'ws';
     const wsUrl = `${wsProtocol}://${window.location.host}/ws`;
+    const caloriesOffset = (() => {
+        const raw = new URLSearchParams(window.location.search).get('calories_offset');
+        const parsed = Number(raw);
+        return Number.isFinite(parsed) ? parsed : 0;
+    })();
+    const heartrateOffset = (() => {
+        const raw = new URLSearchParams(window.location.search).get('heartrate_offset');
+        const parsed = Number(raw);
+        return Number.isFinite(parsed) ? parsed : 0;
+    })();
     let ws = null;
     let reconnectTimer = null;
 
     function formatKcalDisplay(value) {
-        const num = Number(value);
+        const num = Number(value) + caloriesOffset;
         return Number.isFinite(num) ? num.toFixed(1) : '0.0';
+    }
+
+    function formatHrDisplay(value) {
+        const num = Number(value);
+        if (!Number.isFinite(num)) return '—';
+        return String(Math.round(num + heartrateOffset));
     }
 
     function parseDateTimeFlexible(value) {
@@ -44,10 +60,17 @@
         });
     }
 
-    function syncCardsManyClass() {
+    function syncCardsDensityClass() {
         if (!cardsGridEl) return;
         const count = cardsGridEl.querySelectorAll('.device_card').length;
-        cardsGridEl.classList.toggle('cards-many', count > 20);
+        cardsGridEl.classList.remove('cards-more-than-20', 'cards-more-than-30');
+        if (count > 30) {
+            cardsGridEl.classList.add('cards-more-than-30');
+        } else if (count > 20) {
+            cardsGridEl.classList.add('cards-more-than-20');
+        } else {
+            // <=20: базовий cards-grid без додаткового класу
+        }
     }
 
     function createDeviceCard(data) {
@@ -77,7 +100,7 @@
             lastNameEl.textContent = data.last_name || '';
         }
         cardsGridEl.appendChild(card);
-        syncCardsManyClass();
+        syncCardsDensityClass();
         return card;
     }
 
@@ -85,7 +108,7 @@
         const card = document.querySelector(`.device_card[data-device-id="${deviceId}"]`);
         if (!card) return;
         card.remove();
-        syncCardsManyClass();
+        syncCardsDensityClass();
     }
 
     function updateHeartRateUI(data) {
@@ -97,7 +120,7 @@
         const hrEl = card.querySelector('.metric_value.hr');
         const kcalEl = card.querySelector('.metric_value.kcal');
         const timeEl = card.querySelector('.device_time');
-        if (hrEl) hrEl.textContent = data.hr ?? '—';
+        if (hrEl) hrEl.textContent = formatHrDisplay(data.hr);
         if (kcalEl) kcalEl.textContent = formatKcalDisplay(data.calories);
         if (timeEl) timeEl.textContent = data.fitness_time || '0:00:00';
     }
@@ -143,6 +166,6 @@
 
     setConnectionState(false);
     bootstrapInitialFitnessTime();
-    syncCardsManyClass();
+    syncCardsDensityClass();
     connect();
 })();
