@@ -4,26 +4,19 @@
     font-style: normal;
     font-weight: 700;
 }
+
 @font-face {
     font-family: 'TacticSansExd-Bld';
     src: url('/static/fonts/TacticSansExd-Bld.otf') format('opentype');
     font-style: normal;
     font-weight: 700;
 }
+
 @font-face {
     font-family: 'TacticSansExd-Reg';
     src: url('/static/fonts/TacticSansExd-Reg.otf') format('opentype');
     font-style: normal;
     font-weight: 400;
-}
-
-body {
-    font-family: 'TacticSansExd-Reg', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: url('/static/images/bg.png') center/cover no-repeat fixed;
-    color: #fff;
-    margin: 0;
-    padding: 0;
-    min-height: 100vh;
 }
 
 html,
@@ -32,43 +25,33 @@ body {
     overflow: hidden;
 }
 
-.board-title-text {
-    position: fixed;
-    left: 150px;
-    top: 30px;
-    width: 1478px;
-    height: 62px;
-    z-index: 372;
+body {
+    font-family: 'TacticSansExd-Reg', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: url('/static/images/bg-text.png') #0e0f10 center/cover no-repeat fixed;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
 
+.board-title-text {
     font-family: 'TacticSans-Bld', sans-serif;
     font-size: 46px;
     font-weight: 700;
     color: rgb(192, 192, 192);
     text-transform: uppercase;
     line-height: 1.405;
-    text-align: left;
-
-    transform: scaleX(1.64141448738284);
-    transform-origin: left top;
-    white-space: nowrap;
-    pointer-events: none;
-    user-select: none;
+    text-align: center;
 }
 
 .cards-grid {
-    position: fixed;
-    left: 50%;
-    transform: translateX(-50%);
-    top: 3.3cm;
     display: grid;
-    /* primusovo 5 kartok v ryad */
-    grid-template-columns: repeat(5, 9.1cm);
-    gap: 0.5cm;
-    z-index: 6;
-    /* shyryna pid 5 kartok + 4 promizhky */
-    width: 47.5cm;
-    justify-content: start;
-    grid-auto-flow: row;
+    grid-gap: 10px;
+    /*grid-template-columns: 344px 344px 344px 344px 344px;*/
+    grid-template-columns: repeat(5, 344px);
+    justify-content: center;
+    align-content: space-around;
 }
 
 /* Dlya velykoyi kilkosti kartok (>20): 6 v ryad */
