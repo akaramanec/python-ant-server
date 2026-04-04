@@ -20,7 +20,7 @@
             <div class="device_metrics_row">
                 <div class="metric_block hr_block">
                     <img class="metric_icon" src="/static/images/heart.png" alt="" aria-hidden="true"/>
-                    <div class="metric_value hr">{{ row.hr if row.hr is not none else '—' }}</div>
+                    <div class="metric_value hr">{{ row.hr if row.hr is not none else 0 }}</div>
                 </div>
                 <div class="metric_block kcal_block">
                     <img class="metric_icon" src="/static/images/flame.png" alt="" aria-hidden="true"/>

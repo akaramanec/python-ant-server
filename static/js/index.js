@@ -23,7 +23,7 @@
 
     function formatHrDisplay(value) {
         const num = Number(value);
-        if (!Number.isFinite(num)) return '—';
+        if (!Number.isFinite(num)) return '0';
         return String(Math.round(num + heartrateOffset));
     }
 
@@ -78,7 +78,7 @@
         const card = document.createElement('div');
         card.className = 'device_card';
         card.dataset.deviceId = String(data.device_id);
-        card.dataset.startAt = '';
+        card.dataset.startAt = data.start_at || '';
         card.innerHTML = `
             <div class="device_name_zone">
                 <div class="device_last_name"></div>
@@ -86,7 +86,7 @@
             <div class="device_metrics_row">
                 <div class="metric_block hr_block">
                     <img class="metric_icon" src="/static/images/heart.png" alt="" aria-hidden="true" />
-                    <div class="metric_value hr">—</div>
+                    <div class="metric_value hr">0</div>
                 </div>
                 <div class="metric_block kcal_block">
                     <img class="metric_icon" src="/static/images/flame.png" alt="" aria-hidden="true" />
@@ -122,7 +122,16 @@
         const timeEl = card.querySelector('.device_time');
         if (hrEl) hrEl.textContent = formatHrDisplay(data.hr);
         if (kcalEl) kcalEl.textContent = formatKcalDisplay(data.calories);
-        if (timeEl) timeEl.textContent = data.fitness_time || '0:00:00';
+        if (data.start_at) {
+            card.dataset.startAt = data.start_at;
+        }
+        if (timeEl) {
+            if (card.dataset.startAt) {
+                timeEl.textContent = formatFitnessTimeFromStart(card.dataset.startAt);
+            } else {
+                timeEl.textContent = data.fitness_time || '0:00:00';
+            }
+        }
     }
 
     function setConnectionState(isLive) {
@@ -168,4 +177,14 @@
     bootstrapInitialFitnessTime();
     syncCardsDensityClass();
     connect();
+
+    setInterval(() => {
+        document.querySelectorAll('.device_card').forEach((card) => {
+            const timeEl = card.querySelector('.device_time');
+            if (!timeEl) return;
+            const startAt = card.dataset.startAt || '';
+            if (!startAt) return;
+            timeEl.textContent = formatFitnessTimeFromStart(startAt);
+        });
+    }, 1000);
 })();

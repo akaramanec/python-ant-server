@@ -1,3 +1,4 @@
+import asyncio
 import base64
 import secrets
 import os
@@ -87,8 +88,73 @@ api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
 
 calories_tracker = defaultdict(float)
 last_update_time = {}
+# Пристрої, для яких уже відправили WS «пульс 0 + актуальні ккал» при відсутності свіжого пульсу (щоб не спамити).
+stale_ws_sent: set = set()
 
 database.init_db()
+
+
+def _rental_fitness_time_str(start_at_raw) -> str:
+    try:
+        s = str(start_at_raw).strip()
+        if " " in s and "T" not in s[:11]:
+            s = s.replace(" ", "T", 1)
+        start_dt = datetime.fromisoformat(s)
+        return str(datetime.now() - start_dt).split(".")[0]
+    except Exception:
+        return "0:00:00"
+
+
+def _display_calories_for_rented_device(device_id: int) -> float:
+    """Ккал для UI: in-memory після /log, інакше з активної оренди в БД."""
+    user = database.get_active_user(device_id)
+    if not user:
+        return 0.0
+    if device_id in calories_tracker:
+        return float(calories_tracker[device_id])
+    return float(user["calories"] or 0.0)
+
+
+async def _broadcast_rental_live_ui(device_id: int, hr: int, calories: float):
+    user = database.get_active_user(device_id)
+    if not user:
+        return
+    await web_socket.broadcast({
+        "device_id": device_id,
+        "first_name": user["first_name"],
+        "last_name": user["last_name"],
+        "start_at": user["start_at"],
+        "fitness_time": _rental_fitness_time_str(user["start_at"]),
+        "hr": int(hr),
+        "calories": round(float(calories), 1),
+    })
+
+
+async def _dashboard_stale_watch_loop():
+    while True:
+        await asyncio.sleep(1)
+        try:
+            timeout = database.get_tracking_timeout_sec()
+            now = datetime.now()
+            for row in database.get_active_rentals_for_stale_tick():
+                d_id = int(row["device_id"])
+                last = last_update_time.get(d_id)
+                fresh = last is not None and (now - last).total_seconds() <= float(timeout)
+                if fresh:
+                    stale_ws_sent.discard(d_id)
+                    continue
+                if d_id in stale_ws_sent:
+                    continue
+                kcal = _display_calories_for_rented_device(d_id)
+                await _broadcast_rental_live_ui(d_id, 0, kcal)
+                stale_ws_sent.add(d_id)
+        except Exception:
+            pass
+
+
+@app.on_event("startup")
+async def _start_dashboard_stale_watcher():
+    asyncio.create_task(_dashboard_stale_watch_loop())
 
 
 async def verify_api_key(header_value: str = Depends(api_key_header)):
@@ -118,9 +184,12 @@ async def read_dashboard(request: Request):
     except (TypeError, ValueError):
         heartrate_offset = 0.0
 
+    timeout = database.get_tracking_timeout_sec()
+    now = datetime.now()
     rows = []
     for row in database.get_dashboard_data():
         item = dict(row)
+        database.apply_dashboard_stale_display(item, timeout, now)
         item["calories"] = float(item.get("calories") or 0.0) + calories_offset
         if item.get("hr") is not None:
             item["hr"] = int(round(float(item["hr"]) + heartrate_offset))
@@ -259,6 +328,11 @@ async def dashboard_start_rental(rental: models.RentalCreate):
     try:
         result = database.start_or_resume_rental(rental.customer_id, rental.device_id)
         calories_tracker[rental.device_id] = float(result["calories"] or 0.0)
+        if result["action"] != "already_active":
+            last_update_time.pop(rental.device_id, None)
+            start_kcal = float(result["calories"] or 0.0)
+            await _broadcast_rental_live_ui(rental.device_id, 0, start_kcal)
+            stale_ws_sent.add(rental.device_id)
         return {
             "status": "started",
             "action": result["action"],
@@ -296,6 +370,9 @@ async def dashboard_history(
 async def dashboard_stop_rental(customer_id: int, device_id: int):
     updated_rows = database.stop_pair_rental(customer_id, device_id)
     if updated_rows > 0:
+        last_update_time.pop(device_id, None)
+        calories_tracker.pop(device_id, None)
+        stale_ws_sent.discard(device_id)
         await web_socket.broadcast({
             "event": "rental_stopped",
             "device_id": device_id,
@@ -354,11 +431,13 @@ async def log_heart_rate(request: Request, api_key: str = Depends(verify_api_key
                     database.update_rental_calories(d_id, round(calories_tracker[d_id], 1))
 
             last_update_time[d_id] = now
+            stale_ws_sent.discard(d_id)
 
             await web_socket.broadcast({
                 "device_id": d_id,
                 "first_name": user['first_name'],
                 "last_name": user['last_name'],
+                "start_at": user['start_at'],
                 "fitness_time": fitness_time,
                 "hr": hr_corrected,
                 "calories": round(calories_tracker[d_id], 1),
@@ -414,6 +493,11 @@ async def start_rental(rental: models.RentalCreate, api_key: str = Depends(verif
     try:
         result = database.start_or_resume_rental(rental.customer_id, rental.device_id)
         calories_tracker[rental.device_id] = float(result["calories"] or 0.0)
+        if result["action"] != "already_active":
+            last_update_time.pop(rental.device_id, None)
+            start_kcal = float(result["calories"] or 0.0)
+            await _broadcast_rental_live_ui(rental.device_id, 0, start_kcal)
+            stale_ws_sent.add(rental.device_id)
         return {"status": "started", "action": result["action"], "device_id": rental.device_id}
     except ValueError as e:
         raise HTTPException(status_code=409, detail=str(e))
@@ -428,6 +512,9 @@ async def stop_rental(device_id: int, api_key: str = Depends(verify_api_key)):
             cursor = conn.execute("UPDATE device_rentals SET finish_at = ? WHERE device_id = ? AND finish_at IS NULL",
                                   (now_str, device_id))
         if cursor.rowcount > 0:
+            last_update_time.pop(device_id, None)
+            calories_tracker.pop(device_id, None)
+            stale_ws_sent.discard(device_id)
             await web_socket.broadcast({
                 "event": "rental_stopped",
                 "device_id": device_id

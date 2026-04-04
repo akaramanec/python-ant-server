@@ -111,6 +111,7 @@ def delete_user_full(user_id: int):
         return cursor.rowcount > 0
 
 def get_dashboard_data():
+    """Останній HR лише з поточної оренди (з моменту r.start_at), не з попередніх сесій."""
     with get_db_connection() as conn:
         query = """
             SELECT r.device_id, u.first_name, u.last_name, r.start_at, u.age, u.weight,
@@ -119,12 +120,49 @@ def get_dashboard_data():
             FROM device_rentals r
             JOIN users u ON r.customer_id = u.id
             LEFT JOIN heart_rates h ON r.device_id = h.device_id
+              AND julianday(h.timestamp) >= julianday(r.start_at)
             LEFT JOIN trackers t ON r.device_id = t.device_id
             WHERE r.finish_at IS NULL
-              AND (h.timestamp = (SELECT MAX(timestamp) FROM heart_rates WHERE device_id = r.device_id) OR h.timestamp IS NULL)
-            ORDER BY h.timestamp DESC
+              AND (
+                h.timestamp IS NULL
+                OR h.timestamp = (
+                  SELECT MAX(hr2.timestamp)
+                  FROM heart_rates hr2
+                  WHERE hr2.device_id = r.device_id
+                    AND julianday(hr2.timestamp) >= julianday(r.start_at)
+                )
+              )
+            ORDER BY u.last_name, u.first_name, r.device_id
         """
         return conn.execute(query).fetchall()
+
+
+def get_active_rentals_for_stale_tick():
+    """Мінімальні поля для фонового WS при відсутності свіжого пульсу."""
+    with get_db_connection() as conn:
+        return conn.execute("""
+            SELECT r.device_id, r.start_at, u.first_name, u.last_name
+            FROM device_rentals r
+            JOIN users u ON r.customer_id = u.id
+            WHERE r.finish_at IS NULL
+        """).fetchall()
+
+def apply_dashboard_stale_display(row_dict: dict, tracking_timeout_sec: int, now: datetime) -> None:
+    """
+    Якщо немає зразка пульсу або він старший за tracking_timeout_sec — на дошці пульс 0.
+    Накопичені калорії з оренди (r.calories) не скидаються.
+    """
+    ts_raw = row_dict.get("ts")
+    if ts_raw is None:
+        row_dict["hr"] = 0
+        return
+    dt = _parse_ts(ts_raw)
+    if dt is None:
+        row_dict["hr"] = 0
+        return
+    if (now - dt).total_seconds() > float(tracking_timeout_sec):
+        row_dict["hr"] = 0
+
 
 def update_rental_calories(device_id, calories):
     with get_db_connection() as conn:
