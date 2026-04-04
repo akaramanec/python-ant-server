@@ -87,6 +87,24 @@ body {
     font-size: 15px;
 }
 
+.cards-grid.cards-more-than-20 .device_name_icon {
+    width: 18px;
+    height: 18px;
+}
+
+.cards-grid.cards-more-than-30 .device_name_icon {
+    width: 15px;
+    height: 15px;
+}
+
+.cards-grid.cards-more-than-20 .device_name_row {
+    gap: 6px;
+}
+
+.cards-grid.cards-more-than-30 .device_name_row {
+    gap: 5px;
+}
+
 .cards-grid.cards-more-than-20 .device_name_zone {
     left: 7px;
     top: 10px;
@@ -177,7 +195,6 @@ body {
 .device_name_zone {
     border-radius: 15px;
     background-color: rgb(38, 38, 38);
-    position: absolute;
     left: 9px;
     top: 12px;
     width: calc(100% - 18px);
@@ -187,13 +204,35 @@ body {
     justify-content: center;
 }
 
+.device_name_row {
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+    max-width: 100%;
+    min-width: 0;
+}
+
+.device_name_icon {
+    width: 22px;
+    height: 22px;
+    object-fit: contain;
+    flex-shrink: 0;
+    display: block;
+    user-select: none;
+    pointer-events: none;
+}
+
 .device_last_name {
     font-family: 'TacticSansExd-Bld', 'TacticSans-Bld', sans-serif;
     font-weight: 700;
     color: #ffffff;
     font-size: 20px;
-    text-align: center;
+    text-align: left;
     white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    min-width: 0;
 }
 
 .device_metrics_row {

@@ -73,7 +73,9 @@ def get_active_user(device_id):
     with get_db_connection() as conn:
         # Додав calories у вибірку, щоб сервер міг їх підхопити
         return conn.execute("""
-            SELECT u.first_name, u.last_name, u.age, u.weight, u.sex, r.start_at, r.calories
+            SELECT u.first_name, u.last_name, u.age, u.weight,
+                   COALESCE(NULLIF(TRIM(COALESCE(u.sex, '')), ''), 'male') AS sex,
+                   r.start_at, r.calories
             FROM device_rentals r JOIN users u ON r.customer_id = u.id
             WHERE r.device_id = ? AND r.finish_at IS NULL
         """, (device_id,)).fetchone()
@@ -114,7 +116,9 @@ def get_dashboard_data():
     """Останній HR лише з поточної оренди (з моменту r.start_at), не з попередніх сесій."""
     with get_db_connection() as conn:
         query = """
-            SELECT r.device_id, u.first_name, u.last_name, r.start_at, u.age, u.weight,
+            SELECT r.device_id, u.first_name, u.last_name,
+                   COALESCE(NULLIF(TRIM(COALESCE(u.sex, '')), ''), 'male') AS sex,
+                   r.start_at, u.age, u.weight,
                    CAST(ROUND(h.hr * COALESCE(t.correction_factor, 1.0), 0) AS INTEGER) as hr,
                    h.timestamp as ts, r.calories
             FROM device_rentals r

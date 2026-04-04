@@ -8,37 +8,45 @@
     <link rel="stylesheet" href="/static/css/index.css">
 </head>
 <body>
-    <div class="board-title-text">ДОШКА АКТИВНИХ КОРИСТУВАЧІВ</div>
- 
-    <div class="cards-grid{% if data|length > 30 %} cards-more-than-30{% elif data|length > 20 %} cards-more-than-20{% endif %}" id="cards-grid">
-        {% for row in data %}
-        <div class="device_card" data-device-id="{{ row.device_id }}"
-            data-start-at="{{ row.start_at | default('', true) }}">
-            <div class="device_name_zone">
+<div class="board-title-text">ДОШКА АКТИВНИХ КОРИСТУВАЧІВ</div>
+
+<div class="cards-grid{% if data|length > 30 %} cards-more-than-30{% elif data|length > 20 %} cards-more-than-20{% endif %}"
+     id="cards-grid">
+    {% for row in data %}
+    <div class="device_card" data-device-id="{{ row.device_id }}"
+         data-start-at="{{ row.start_at | default('', true) }}"
+         data-sex="{{ row.sex }}">
+        <div class="device_name_zone">
+            <div class="device_name_row">
+                {% set g = (row.sex or 'male')|lower %}
+                <img class="device_name_icon"
+                     src="/static/images/{% if g in ['female', 'f', 'ж', 'w', 'woman'] %}woman.png{% else %}man.png{% endif %}"
+                     alt="" aria-hidden="true"/>
                 <div class="device_last_name">{{ row.last_name }}</div>
             </div>
-            <div class="device_metrics_row">
-                <div class="metric_block hr_block">
-                    <img class="metric_icon" src="/static/images/heart.png" alt="" aria-hidden="true"/>
-                    <div class="metric_value hr">{{ row.hr if row.hr is not none else 0 }}</div>
-                </div>
-                <div class="metric_block kcal_block">
-                    <img class="metric_icon" src="/static/images/flame.png" alt="" aria-hidden="true"/>
-                    <div class="metric_value kcal">{{ "%.1f"|format((row.calories if row.calories is not none else
-                        0)|float) }}
-                    </div>
+        </div>
+        <div class="device_metrics_row">
+            <div class="metric_block hr_block">
+                <img class="metric_icon" src="/static/images/heart.png" alt="" aria-hidden="true"/>
+                <div class="metric_value hr">{{ row.hr if row.hr is not none else 0 }}</div>
+            </div>
+            <div class="metric_block kcal_block">
+                <img class="metric_icon" src="/static/images/flame.png" alt="" aria-hidden="true"/>
+                <div class="metric_value kcal">{{ "%.1f"|format((row.calories if row.calories is not none else
+                    0)|float) }}
                 </div>
             </div>
-            <div class="device_time">{{ row.fitness_time | default('0:00:00', true) }}</div>
         </div>
-        {% endfor %}
+        <div class="device_time">{{ row.fitness_time | default('0:00:00', true) }}</div>
     </div>
+    {% endfor %}
+</div>
 
-    <div class="status-meta">
-        <span class="last-refresh-text" id="last-refresh-text">Останнє повне оновлення сторінки: {{ now }}</span>
-        <span class="connection-status offline" id="connection-status">Статус з'єднання: OFFLINE</span>
-    </div>
+<div class="status-meta">
+    <span class="last-refresh-text" id="last-refresh-text">Останнє повне оновлення сторінки: {{ now }}</span>
+    <span class="connection-status offline" id="connection-status">Статус з'єднання: OFFLINE</span>
+</div>
 
-    <script src="/static/js/index.js"></script>
+<script src="/static/js/index.js"></script>
 </body>
 </html>

@@ -123,6 +123,7 @@ async def _broadcast_rental_live_ui(device_id: int, hr: int, calories: float):
         "device_id": device_id,
         "first_name": user["first_name"],
         "last_name": user["last_name"],
+        "sex": user.get("sex") or "male",
         "start_at": user["start_at"],
         "fitness_time": _rental_fitness_time_str(user["start_at"]),
         "hr": int(hr),
@@ -242,7 +243,7 @@ async def dashboard_users_full():
             "age": row["age"],
             "height": row["height"],
             "weight": row["weight"],
-            "sex": row["sex"]
+            "sex": row["sex"],
         }
         for row in rows
     ]
@@ -437,6 +438,7 @@ async def log_heart_rate(request: Request, api_key: str = Depends(verify_api_key
                 "device_id": d_id,
                 "first_name": user['first_name'],
                 "last_name": user['last_name'],
+                "sex": user.get("sex") or "male",
                 "start_at": user['start_at'],
                 "fitness_time": fitness_time,
                 "hr": hr_corrected,

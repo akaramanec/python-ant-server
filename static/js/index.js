@@ -27,6 +27,14 @@
         return String(Math.round(num + heartrateOffset));
     }
 
+    function genderIconSrc(sex) {
+        const s = String(sex == null ? 'male' : sex).trim().toLowerCase();
+        if (['female', 'f', 'ж', 'w', 'woman'].includes(s)) {
+            return '/static/images/woman.png';
+        }
+        return '/static/images/man.png';
+    }
+
     function parseDateTimeFlexible(value) {
         if (!value) return null;
         let s = String(value).trim();
@@ -79,9 +87,15 @@
         card.className = 'device_card';
         card.dataset.deviceId = String(data.device_id);
         card.dataset.startAt = data.start_at || '';
+        if (data.sex !== undefined && data.sex !== null) {
+            card.dataset.sex = String(data.sex);
+        }
         card.innerHTML = `
             <div class="device_name_zone">
-                <div class="device_last_name"></div>
+                <div class="device_name_row">
+                    <img class="device_name_icon" src="${genderIconSrc(data.sex)}" alt="" aria-hidden="true" />
+                    <div class="device_last_name"></div>
+                </div>
             </div>
             <div class="device_metrics_row">
                 <div class="metric_block hr_block">
@@ -117,6 +131,14 @@
         }
         const card = document.querySelector(`.device_card[data-device-id="${data.device_id}"]`) || createDeviceCard(data);
         if (!card) return;
+        const iconEl = card.querySelector('.device_name_icon');
+        if (iconEl && data.sex !== undefined && data.sex !== null) {
+            iconEl.src = genderIconSrc(data.sex);
+        }
+        const lastNameEl = card.querySelector('.device_last_name');
+        if (lastNameEl && data.last_name != null) {
+            lastNameEl.textContent = data.last_name;
+        }
         const hrEl = card.querySelector('.metric_value.hr');
         const kcalEl = card.querySelector('.metric_value.kcal');
         const timeEl = card.querySelector('.device_time');
@@ -124,6 +146,9 @@
         if (kcalEl) kcalEl.textContent = formatKcalDisplay(data.calories);
         if (data.start_at) {
             card.dataset.startAt = data.start_at;
+        }
+        if (data.sex !== undefined && data.sex !== null) {
+            card.dataset.sex = String(data.sex);
         }
         if (timeEl) {
             if (card.dataset.startAt) {
