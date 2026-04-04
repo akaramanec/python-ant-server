@@ -12,6 +12,33 @@
 - таймаут сигналу з налаштування (`tracking_timeout_sec`);
 - бекап SQLite через `backup_db.sh`.
 
+## Шаблони та структура проєкту
+
+**Шаблонізатор:** [Jinja2](https://jinja.palletsprojects.com/) підключається через FastAPI (`fastapi.templating.Jinja2Templates`). У `server.py` каталог шаблонів — **`templates/`**. HTML-сторінки збираються на сервері з підстановкою даних (наприклад `{% for %}`, `{{ змінна }}`, фільтри на кшталт `|default`).
+
+**Де що лежить (коротко):**
+
+| Шлях | Призначення |
+|------|-------------|
+| `server.py` | Додаток FastAPI: маршрути HTML/API/WebSocket, підключення статики |
+| `config.py` | Завантаження `.env` (порт, БД, API-ключ, облікові для адмінки) |
+| `database.py` | SQLite: ініціалізація, запити до таблиць |
+| `models.py` | Pydantic-моделі для API |
+| `utils.py` | Допоміжна логіка (наприклад розрахунок калорій) |
+| `rental.py` | Логіка оренди трекерів |
+| `web_socket.py` | Розсилка подій клієнтам по WebSocket |
+| `templates/` | Jinja2-шаблони: `index.html` (дашборд `/`), `admin.html` (`/admin`) |
+| `static/` | Статичні файли; у додатку змонтовано як префікс **`/static`** (`StaticFiles`) |
+| `static/css/` | `index.css`, `admin.css` — стилі дашборду та адмінки |
+| `static/js/` | `index.js`, `admin.js` — клієнтська логіка (WebSocket, модалки, фільтри) |
+| `static/images/` | Зображення для UI (фон, іконки метрик тощо; шлях у шаблонах/CSS — `/static/images/...`) |
+| `static/fonts/` | Кастомні шрифти (наприклад `TacticSans*.otf`), підключаються з CSS через `/static/fonts/...` |
+| `heart_data.db` | Файл SQLite (ім’я/шлях задається в `.env`, зазвичай `DB_PATH`) |
+| `backup_db.sh`, `reload_demon.sh`, `update.sh` | Допоміжні shell-скрипти для сервера |
+| `migration_seed_test_users.py` | Опційне заповнення тестовими користувачами |
+
+**Маршрути «сайту» (браузер):** публічно — лише **`/`** (дашборд) та **`/ws`** (WebSocket для live-даних). Сторінка **`/admin`** і JSON API під **`/dashboard/*`** потребують налаштованих `ADMIN_USERNAME` / `ADMIN_PASSWORD` у `.env` і входу по HTTP Basic (деталі — у вступі вище).
+
 ## Як працює потік даних
 
 1. Listener-и надсилають події на `POST /log`.
@@ -21,6 +48,134 @@
 5. Дашборд отримує live-події по WebSocket (`/ws`).
 6. При завершенні оренди сервер шле подію, і картка зникає з UI без перезавантаження.
 7. При старті оренди система пробує знайти запис за сьогодні для пари `user + tracker` і відновлює його, а не створює дубль.
+
+## 0) Wi‑Fi на сервері (з нуля: Netplan + NetworkManager, як на робочій «Малині»)
+
+**Навіщо:** щоб пристрій отримав IP у Wi‑Fi (дашборд, `POST /log`, SSH) без дроту.
+
+На сучасних **Ubuntu Server** і багатьох збірках **Raspberry Pi OS** мережу керує **NetworkManager**, а стартова конфігурація задається **Netplan** (`/etc/netplan/*.yaml`). У такому режимі **редагування лише** `/etc/wpa_supplicant/wpa_supplicant.conf` **не змінює** підключення: активний профіль береться з **Netplan/NM** (у `nmcli device status` видно на кшталт `netplan-wlan0-<ssid>`).
+
+### 0.1) Що має бути встановлено
+
+Переконайтеся, що Wi‑Fi не заблоковано і встановлені потрібні пакети:
+
+```bash
+sudo rfkill unblock wifi
+sudo apt update
+sudo apt install -y network-manager netplan.io wpasupplicant wireless-tools
+sudo systemctl enable --now NetworkManager
+```
+
+Перевірка, що саме NM керує інтерфейсом:
+
+```bash
+systemctl is-active NetworkManager
+nmcli device status
+```
+
+Очікується: `wlan0` у стані **connected**, тип **wifi**, колонка **CONNECTION** — ім’я профілю (часто `netplan-wlan0-<назва_ssid>`).
+
+### 0.2) Постійне налаштування через Netplan (рекомендовано)
+
+1. Подивіться файли:
+
+```bash
+ls /etc/netplan/
+sudo cat /etc/netplan/*.yaml
+```
+
+2. Знайдіть файл, де є **`wifis:`** / **`wlan0:`** (інший файл може описувати лише `eth0` — його не змінюйте без потреби).
+
+3. Задайте потрібну мережу в блоці **`access-points`** (SSID і пароль WPA2/WPA3 PSK). Приклад структури (підставте свої `SSID` і пароль; лапки навколо SSID обов’язкові, якщо в назві є пробіли):
+
+```yaml
+network:
+  version: 2
+  wifis:
+    wlan0:
+      renderer: NetworkManager
+      match: {}
+      dhcp4: true
+      access-points:
+        "ВАШ_SSID":
+          auth:
+            key-management: "psk"
+            password: "ПарольАбо64HexВід_wpa_passphrase"
+          networkmanager:
+            uuid: "..."          # залиште існуючі uuid/name з вашого файла, якщо netplan їх уже створив
+            name: "netplan-wlan0-ВАШ_SSID"
+            passthrough:
+              proxy._: ""
+      networkmanager:
+        uuid: "..."
+        name: "netplan-wlan0-ВАШ_SSID"
+```
+
+Пароль можна задати **текстом** або **64 hex** (вивід `wpa_passphrase "SSID" "пароль"` → поле `psk=`).
+
+4. Обмежте права на конфіги та застосуйте:
+
+```bash
+sudo chmod 600 /etc/netplan/*.yaml
+sudo chown root:root /etc/netplan/*.yaml
+sudo netplan try
+```
+
+Якщо з’єднання стабільне — підтвердіть у запиті **Enter** (інакше до таймаута відкотиться). Далі можна `sudo netplan apply`.
+
+Попередження про занадто відкриті права на `/lib/netplan/00-network-manager-all.yaml` можна прибрати (не чіпає ваші файли в `/etc/netplan/`):
+
+```bash
+sudo chmod 600 /lib/netplan/00-network-manager-all.yaml
+```
+
+5. Перевірка:
+
+```bash
+iw dev wlan0 link
+ip a show wlan0
+ping -c 2 1.1.1.1
+```
+
+### 0.3) Швидке підключення через `nmcli` (разово або для тесту)
+
+Коли NM уже активний, можна підключитися без ручного редагування YAML (профіль з’явиться в NM; після перезавантаження надійніше все одно зафіксувати в **Netplan**, як у **§0.2**):
+
+```bash
+nmcli device wifi list
+sudo nmcli device wifi connect "ВАШ_SSID" password "Пароль"
+nmcli device status
+```
+
+Щоб відключити зайвий профіль і підключити інший SSID:
+
+```bash
+nmcli connection show --active
+sudo nmcli connection down "старий-профіль"
+sudo nmcli device wifi connect "Новий_SSID" password "Пароль"
+```
+
+Після зміни **лише** Netplan-файлу старий профіль на кшталт `netplan-wlan0-aparts` інколи лишається у списку — його можна видалити: `sudo nmcli connection delete "netplan-wlan0-aparts"`, якщо він більше не потрібен.
+
+### 0.4) Інтерактивно на Raspberry Pi OS (монітор + клавіатура)
+
+Альтернатива без YAML:
+
+```bash
+sudo raspi-config
+```
+
+**System Options → Wireless LAN** — ввести SSID і пароль, за потреби `sudo reboot`.
+
+### 0.5) Класичний лише `wpa_supplicant` (якщо NM не керує wlan0)
+
+Має сенс лише на системах без NetworkManager для Wi‑Fi. Тоді правлять `/etc/wpa_supplicant/wpa_supplicant.conf`, перезапускають `wpa_supplicant@wlan0` або використовують `wpa_cli reconfigure` (див. також `man wpa_supplicant.conf`).
+
+### Що варто знати
+
+- **Статичний IP** — резервація DHCP на роутері за MAC `wlan0`, або додаткові поля в Netplan/NM (залежить від версії; для TV-дашборду часто достатньо стабільної DHCP-резервації).
+- **Гостьові Wi‑Fi / captive portal** без браузера на сервері налаштувати важко; для залу краще звичайна WPA2/WPA3 мережа.
+- Дашборд після появи IP: `http://<IP>:8000/` (або через nginx — **§8**).
 
 ## 1) Вимоги (Raspberry Pi / Ubuntu/Debian)
 
@@ -351,6 +506,7 @@ python3 migration_seed_test_users.py
 
 ## 13) Troubleshooting
 
+- **Немає Wi‑Fi / немає IP на `wlan0`**: див. **§0** (`rfkill`, **Netplan** у `/etc/netplan/`, **NetworkManager** / `nmcli device status`; не плутати з «сирою» правкою лише `wpa_supplicant.conf`, якщо активний `netplan-wlan0-*`; перевірити `ip link` та `dmesg | grep -i wlan`).
 - **Порожній дашборд**: перевірити, чи є активні оренди в `device_rentals`.
 - **Не приймає `/log`**: перевірити `X-API-Key` і значення в `.env`.
 - **Не видно live-оновлень**: перевірити WebSocket `/ws` (за nginx — чи проксується `/ws` з `Upgrade`), статус сервісу `ant_server.service`.
