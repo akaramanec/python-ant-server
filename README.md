@@ -505,22 +505,7 @@ python3 migration_seed_test_users.py
 - `GET /dashboard/history` — зведення **по дню** (трекер + користувач): час тренування та ккал з БД пульсу (інтервали &lt; 10 с, Keytel, скоригований HR, дані користувача); фільтри: `device_id`, `customer_id`, `filter_date`; сортування: `sort_by` ∈ `day`, `device_name`, `customer_fullname`, `training_seconds`, `calories`, `sort_dir`, `limit`, `offset`
 - `GET /health` — `{"status":"ok"}` без автентифікації; для Zabbix / HTTP-перевірок
 
-## 13) Моніторинг: Zabbix (1 сервер + 4 слухачі на Малинах)
-
-**Мета:** контролювати доступність усіх **5** пристроїв (мережа, диск, навантаження) і окремо — що **FastAPI** на сервері відповідає.
-
-**Zabbix** тут доречний: один **Zabbix Server** (окремий ПК, VM, Docker або «адмінська» Малина) і **Zabbix Agent 2** на кожній Малині.
-
-**Готовий сценарій для Skala Meet** (`zabbix.skala-meet.com`, active/passive, item `smartfizruk.health`): див. репозиторій **`deploy/zabbix/skala-meet/README.md`** і приклади `*.conf.example` поруч.
-
-### Розподіл ролей
-
-| Вузол | Роль | Що перевіряти |
-|--------|------|----------------|
-| Малина 1 | **Сервер** SmartFizruk | Шаблон **Linux by Zabbix agent** + **HTTP** на `http://<IP>:8000/health` (або через nginx `http://<IP>/health`) — **200** і `"status":"ok"`. За бажанням: unit **systemd** `ant_server.service` = active. |
-| Малини 2–5 | **Слухачі** (`POST /log`) | Той самий шаблон **Linux**. Якщо слухач оформлений як **systemd** — item на сервіс; інакше моніторинг процесу / власний **UserParameter**. |
-
-На кожному хості в Zabbix UI: ім’я, IP, шаблон Linux; на Малинах відкрити **10050/tcp** для IP сервера Zabbix (passive agent).
+## 13) Моніторинг: Zabbix
 
 ### Агент на Raspberry Pi OS / Debian (приклад)
 
