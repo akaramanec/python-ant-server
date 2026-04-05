@@ -503,9 +503,63 @@ python3 migration_seed_test_users.py
 - `GET /dashboard/settings/search-new-trackers`
 - `POST /dashboard/settings/search-new-trackers/toggle`
 - `GET /dashboard/history` — зведення **по дню** (трекер + користувач): час тренування та ккал з БД пульсу (інтервали &lt; 10 с, Keytel, скоригований HR, дані користувача); фільтри: `device_id`, `customer_id`, `filter_date`; сортування: `sort_by` ∈ `day`, `device_name`, `customer_fullname`, `training_seconds`, `calories`, `sort_dir`, `limit`, `offset`
+- `GET /health` — `{"status":"ok"}` без автентифікації; для Zabbix / HTTP-перевірок
 
-## 13) Troubleshooting
+## 13) Моніторинг: Zabbix (1 сервер + 4 слухачі на Малинах)
 
+**Мета:** контролювати доступність усіх **5** пристроїв (мережа, диск, навантаження) і окремо — що **FastAPI** на сервері відповідає.
+
+**Zabbix** тут доречний: один **Zabbix Server** (окремий ПК, VM, Docker або «адмінська» Малина) і **Zabbix Agent 2** на кожній Малині.
+
+**Готовий сценарій для Skala Meet** (`zabbix.skala-meet.com`, active/passive, item `smartfizruk.health`): див. репозиторій **`deploy/zabbix/skala-meet/README.md`** і приклади `*.conf.example` поруч.
+
+### Розподіл ролей
+
+| Вузол | Роль | Що перевіряти |
+|--------|------|----------------|
+| Малина 1 | **Сервер** SmartFizruk | Шаблон **Linux by Zabbix agent** + **HTTP** на `http://<IP>:8000/health` (або через nginx `http://<IP>/health`) — **200** і `"status":"ok"`. За бажанням: unit **systemd** `ant_server.service` = active. |
+| Малини 2–5 | **Слухачі** (`POST /log`) | Той самий шаблон **Linux**. Якщо слухач оформлений як **systemd** — item на сервіс; інакше моніторинг процесу / власний **UserParameter**. |
+
+На кожному хості в Zabbix UI: ім’я, IP, шаблон Linux; на Малинах відкрити **10050/tcp** для IP сервера Zabbix (passive agent).
+
+### Агент на Raspberry Pi OS / Debian (приклад)
+
+```bash
+wget https://repo.zabbix.com/zabbix/7.0/debian/pool/main/z/zabbix-release/zabbix-release_latest+debian12_all.deb
+sudo dpkg -i zabbix-release_latest+debian12_all.deb
+sudo apt update
+sudo apt install -y zabbix-agent2
+```
+
+Редагуэмо коннфыгурацію
+```bash
+sudo nano /etc/zabbix/zabbix_agent2.conf
+```
+Встановити значення:
+```nano
+Server=46.101.251.156
+ServerActive=46.101.251.156
+Hostname=REPLACE_WITH_UNIQUE_HOSTNAME <<<!!!
+```
+Далі активізуємо
+```bash
+sudo systemctl enable --now zabbix-agent2
+sudo systemctl restart zabbix-agent2
+sudo systemctl status zabbix-agent2
+```
+Контроль логів
+```bash
+sudo tail -f /var/log/zabbix/zabbix_agent2.log
+```
+### Тригери
+
+Типові: хост недоступний N хвилин, диск &gt; 90%, **HTTP /health** не 200 — сповіщення через e‑mail / Telegram у медіа Zabbix.
+
+---
+
+## 14) Troubleshooting
+
+- **Zabbix не бачить агент**: фаєрвол **10050**, директива `Server=` у `zabbix_agent2.conf`, NTP, ім’я хоста в Zabbix збігається з очікуваним.
 - **Немає Wi‑Fi / немає IP на `wlan0`**: див. **§0** (`rfkill`, **Netplan** у `/etc/netplan/`, **NetworkManager** / `nmcli device status`; не плутати з «сирою» правкою лише `wpa_supplicant.conf`, якщо активний `netplan-wlan0-*`; перевірити `ip link` та `dmesg | grep -i wlan`).
 - **Порожній дашборд**: перевірити, чи є активні оренди в `device_rentals`.
 - **Не приймає `/log`**: перевірити `X-API-Key` і значення в `.env`.
